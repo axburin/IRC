@@ -1,0 +1,146 @@
+Bien sûr ! Voici un **tutoriel étape par étape** qui détaille à la fois ce que tu dois **apprendre** et ce que tu dois **implémenter** à chaque étape pour réaliser ton serveur IRC en C++98, dans l’ordre logique du projet.
+
+---
+
+## 1. **Comprendre le protocole IRC et le fonctionnement général**
+### À apprendre :
+- Lire la RFC 1459 (structure des messages, commandes, réponses).
+- Comprendre le fonctionnement d’un serveur IRC (gestion des clients, canaux, opérateurs, etc.).
+
+### À implémenter :
+- Rien à coder ici, mais prends des notes sur les commandes et réponses à gérer.
+
+---
+
+## 2. **Maîtriser les bases du réseau en C++/C**
+### À apprendre :
+- Sockets TCP/IP : création, liaison, écoute, acceptation de connexions.
+- Différence entre mode bloquant et non bloquant.
+
+### À implémenter :
+- Un socket d’écoute sur le port donné en argument.
+- Accepter les connexions entrantes (sans gestion des clients pour l’instant).
+
+---
+
+## 3. **Gestion non bloquante des entrées/sorties**
+### À apprendre :
+- Utilisation de `poll()` (ou équivalent) pour surveiller plusieurs sockets.
+- Mise en place de sockets en mode non bloquant.
+
+### À implémenter :
+- Mettre le socket d’écoute en non bloquant.
+- Utiliser `poll()` pour gérer le socket d’écoute et les sockets clients.
+- Accepter plusieurs clients sans bloquer.
+
+---
+
+## 4. **Gestion des clients**
+### À apprendre :
+- Stocker les informations des clients (socket, état, pseudo, etc.).
+- Gérer la déconnexion propre d’un client.
+
+### À implémenter :
+- Structure pour représenter un client.
+- Ajouter un client à la connexion, le retirer à la déconnexion.
+- Nettoyer les ressources à la déconnexion.
+
+---
+
+## 5. **Gestion des buffers et reconstitution des commandes**
+### À apprendre :
+- Les données peuvent arriver en morceaux : il faut reconstituer les commandes complètes.
+- Utilisation de buffers pour chaque client.
+
+### À implémenter :
+- Un buffer par client pour stocker les données reçues.
+- Détecter les fins de commandes (`\r\n`) et découper les messages.
+
+---
+
+## 6. **Analyse et traitement des commandes IRC**
+### À apprendre :
+- Parsing des commandes IRC (NICK, USER, JOIN, PART, PRIVMSG, etc.).
+- Vérification de la validité des commandes et arguments.
+
+### À implémenter :
+- Fonction de parsing des commandes.
+- Gestion des commandes de base : NICK, USER, PASS, JOIN, PART, PRIVMSG, QUIT.
+- Répondre avec les bons messages IRC (codes de réponse, erreurs).
+
+---
+
+## 7. **Gestion des canaux**
+### À apprendre :
+- Création, suppression et gestion dynamique des canaux.
+- Modes de canaux (invitation, mot de passe, limite d’utilisateurs, etc.).
+- Gestion des opérateurs de canaux.
+
+### À implémenter :
+- Structure pour représenter un canal et ses membres.
+- Commandes : JOIN, PART, KICK, INVITE, TOPIC, MODE.
+- Gestion des modes de canaux (i, t, k, o, l).
+
+---
+
+## 8. **Gestion des messages**
+### À apprendre :
+- Diffusion d’un message à tous les membres d’un canal.
+- Gestion des messages privés entre utilisateurs.
+
+### À implémenter :
+- Commande PRIVMSG pour envoyer un message à un canal ou à un utilisateur.
+- Diffusion correcte des messages.
+
+---
+
+## 9. **Gestion de l’authentification**
+### À apprendre :
+- Vérification du mot de passe à la connexion.
+- Gestion de l’état d’authentification d’un client.
+
+### À implémenter :
+- Vérification du mot de passe à la connexion.
+- Refuser les commandes IRC tant que le client n’est pas authentifié.
+
+---
+
+## 10. **Gestion des erreurs et robustesse**
+### À apprendre :
+- Vérification systématique des erreurs de retour des fonctions système.
+- Gestion des cas de données incomplètes, déconnexions inattendues, ressources insuffisantes.
+- Prévention des crashs.
+
+### À implémenter :
+- Vérification de toutes les erreurs.
+- Gestion des cas limites (données fragmentées, déconnexions, etc.).
+- Protection contre les crashs (try/catch, vérification des allocations, etc.).
+
+---
+
+## 11. **Organisation du projet**
+### À apprendre :
+- Structurer le code en plusieurs fichiers (headers, sources).
+- Écrire un Makefile conforme aux consignes.
+
+### À implémenter :
+- Organisation des fichiers : .cpp, .hpp, Makefile.
+- Makefile avec les règles demandées (all, clean, fclean, re, $(NAME)).
+
+---
+
+## 12. **Tests et validation**
+### À apprendre :
+- Utiliser un client IRC de référence (irssi, HexChat) pour tester.
+- Utiliser `nc` pour tester la gestion des commandes fragmentées.
+
+### À implémenter :
+- Tester toutes les fonctionnalités obligatoires.
+- Corriger les bugs et améliorer la robustesse.
+
+---
+
+**Conseil général :**  
+Valide chaque étape avant de passer à la suivante. Prends le temps de bien comprendre chaque notion avant de l’implémenter. Documente ton code et fais des tests réguliers.
+
+Si tu veux des ressources pour apprendre un point précis, demande-moi !
