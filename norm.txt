@@ -42,23 +42,45 @@ Commande :
 		- si le nom est deja sortir un erreur et ne pas changer le nom
 	
 	-USER <username> <hostname> <servername> <realname> :
-		-commande utiliser au debut de la connexion peut se faire avant le connexion pour le client set ces information ou bien durant la connexion dans ce cas il faudras verifier dans les deux cas l'exactitude des informations
+		- commande utiliser au debut de la connexion peut se faire avant le connexion pour le client set ces information ou bien durant la connexion dans ce cas il faudras verifier dans les deux cas l'exactitude des informations
 	
 	-OPER <user> <password> :
-		-commande pour donner les privileges d'operateur a un client quand un client devient un operateur
-		-quand un client devient un operateur il est affiche pour tous les client du nom du nouvel utilisateur (MODE +o // a specifier)
+		- commande pour donner les privileges d'operateur a un client quand un client devient un operateur
+		- quand un client devient un operateur il est affiche pour tous les client du nom du nouvel utilisateur (MODE +o // a specifier)
 	
 	-QUIT [<Quit message>] :
-		-commande pour que le client puisse quitter le serveur
-		-si le parametre <quit message> est present c'est ce message qui sera envoye a la place du message par defaut au autre client
-		-si la connexion du client se ferme sans passer par la la commande QUIT specifier un message specifier pour aux autres clients de sa deconnexion
+		- commande pour que le client puisse quitter le serveur
+		- si le parametre <quit message> est present c'est ce message qui sera envoye a la place du message par defaut au autre client
+		- si la connexion du client se ferme sans passer par la la commande QUIT specifier un message specifier pour aux autres clients de sa deconnexion
 	
 	-SQUIT <server> <comment> :
-		-permet de fermer un serveur specifique avec un message 
-		-commande d'operateur de serveur un client ou bien un operateur de channel ne peuvent effectuer cette commande
-		-tous les client recoivent le <comment> que le serveur va s'arreter
+		- permet de fermer un serveur specifique avec un message 
+		- commande d'operateur de serveur un client ou bien un operateur de channel ne peuvent effectuer cette commande
+		- tous les client recoivent le <comment> que le serveur va s'arreter
 	
 	-JOIN <channel>{,<channel>} [<key>{,<key>}] :
-		-permet de joindre un serveur
-		
+		- permet de joindre un serveur. Si la key existe elle doit etre donnee.
+		- liste de ban ? si oui on doit check que le user n'em fait pas partie.
+		- un message est envoye sur le channel avec le nickname du user qui a join. ":<nickname> JOIN #<channel>"
+
+	-MODE <channel> {[+|-] o|i|t|k|l} [<limit>] [<user>] [<key>]:
+		- limit doit etre donner si on utilise +l
+		- le user doit etre fourni pour o
+		- la key doit etre fourni avec +k
+		- le reste doit etre check en interne (permission user)
+		- un channel peut lancer cette commandes (par exemple creation d'un nouveau channel : MODE #<channel> +o <createur>)
+		- on peut faire des +it, -ki, etc...
+	
+	-TOPIC <channel> [<topic>] :
+		- retourne le topic du channel si la param topic est null.
+		- sinon le topic sera changer si c'est autorise par le channel (-t tout le monde peut le changer | +t seul les operateurs peuvent changer).
+
+	-INVITE <nickname> <channel> : 
+		- erreur si le channel ou le user n'existe pas
+		- erreur si le sender n'est pas dans le channel
+	
+	-KICK <channel> <user> [<comment>] :
+		- Seul un operateur peut KICK
+		- un comment peut etre fourni
+		- possibilite de kick plusieurs user de plusieurs channel d'un coup mais a discuter. (tres complexe et notation theorique alors que reel pas supporter)
 */
