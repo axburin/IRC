@@ -1,0 +1,36 @@
+/*
+
+Client :
+	nickname : 
+		-taille maximum 9
+		-unique
+
+	username :
+		- information du nom reel de l'utilisateur sur son pc
+
+Operateur :
+	-class speciale de client (operator)
+	-peut deconnecter et reconnecter le serveur (SQUIT, CONNECT)
+	-peut deconnecter des clients
+
+Channel :
+	-un channel est un groupe  d'un ou plusieurs clients qui recoive des message addresser a ce channel
+	-le channel est creer qunad le premier client le rejoins et se ferme quand le derrnier client le quitte
+	-le nom d'un channel est une string de longueur max 200 caracteres commencant par '&' ou '#' ne contenant pas de ' ', ^G, (ascii 7) ou ","
+	-la commande /join permet de rejoindre un channel si il n'existe pas il es d'abord creer avant de le rejoindre et deviens l'operateur du channel
+	- in client peu etre relier a plusieurs channel max (10)
+	-un operateur de channel est identifier par le symbole '@' a la suite de son nom
+	command :
+		-l'operateur de channel peut utilise ces commandes
+		-KICK eject un client du channel
+		-MODE change le mode du channel
+		-INVITE inviter un client dans un channel invite-only
+		-TOPIC change le topic du channel
+
+
+Commande :
+	-NICK : 
+		-commande utiliser pour donner a l'utilisateur un nickname ou changer le precedent nickname
+		- si le nom est deja sortir un erreur et ne pas changer le nom
+	
+*/

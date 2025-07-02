@@ -15,7 +15,7 @@ int createSocketserver(int port)
 {
 	int sock_fd = socket(AF_INET, SOCK_STREAM, 0);
 	t_sockaddr_in addr;
-	std::memset(&addr, 0, sizeof(addr));
+	// std::memset(&addr, 0, sizeof(addr));
 	addr.sin_family = AF_INET; //Pv4
 	addr.sin_addr.s_addr = INADDR_ANY; // ip
 	addr.sin_port = htons(port); // port
@@ -47,7 +47,7 @@ int createSocketserver(int port)
 		return (-1);
 	}
 	// ajout du socket a epoll pour le surveiller
-	struct epoll_event server_event;
+	epoll_event server_event;
 	server_event.events = EPOLLIN;// Surveiller les événements de lecture (nouvelles connexions)
 	server_event.data.fd = sock_fd;
 
@@ -77,7 +77,7 @@ int accept_new_client(int sock_fd, int epoll_fd) {
     }
     // Ajouter le client à epoll
     struct epoll_event client_event;
-    client_event.events = EPOLLIN;
+    client_event.events = EPOLLIN | EPOLLET;
     client_event.data.fd = client_fd;
     if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client_fd, &client_event) == -1) {
         std::cerr << "Error: Failed to add client socket to epoll" << std::endl;
