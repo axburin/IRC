@@ -22,7 +22,7 @@ int parsingPort(char *argv)
     return(port);
 }
 
-bool    parsing(std::string buffer)
+bool    parsing(std::string buffer) // ? changer en int pour le code d'erreur
 {
     if (buffer.empty())
         return (false);
