@@ -29,25 +29,28 @@ bool    parsing(std::string buffer) // ? changer en int pour le code d'erreur
 
     std::istringstream iss(buffer);
     std::string cmd;
-    std::getline(iss, cmd, ' ');
 
+    iss >> cmd;
     if (cmd.empty())
         return (false);
-    else
-    {
-        std::string param;
-        std::getline (iss, param);
+	std::string param;
+	std::getline (iss, param);
 
-        std::string validcmd[] = { "JOIN", "NICK", "MODE", "INVITE", "TOPIC", "KICK" }; // ? op function's
-        void (*function[])(std::string) = { &join, &nick, &mode, &invite, &topic, &kick };
-        for (int i = 0; i < 6; i++)
-        {
-            if (validcmd[i] == cmd)
-            {
-                function[i];
-                return (true);
-            }
-        }
-    }
-    return (false);
+	size_t start = param.find_first_not_of(" \t");
+    if (start != std::string::npos)
+        param = param.substr(start);
+    else
+        param.clear();
+
+	std::string validcmd[] = { "JOIN", "NICK", "MODE", "INVITE", "TOPIC", "KICK" }; // ? op function's
+	void (*function[])(std::string) = { &join, &nick, &mode, &invite, &topic, &kick };
+	for (int i = 0; i < 6; i++)
+	{
+	    if (validcmd[i] == cmd)
+	    {
+	        function[i](param);
+	        return (true);
+	    }
+	}
+	return (false);
 }
