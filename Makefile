@@ -30,7 +30,12 @@ MAGENTA = \033[0;95m
 CYAN = \033[0;96m
 WHITE = \033[0;97m
 
-SRC = ./src/main.cpp ./src/createServerSocket.cpp ./src/parsing.cpp ./src/Clients.cpp
+SRC = ./src/main.cpp	\
+	./src/utils/utils.cpp	\
+	./src/utils/error.cpp	\
+	./src/class/Client.cpp	\
+	./src/class/Server.cpp	\
+	./src/class/Channel.cpp
 
 OBJ_DIR       = ./obj/
 OBJ           = $(patsubst %.cpp, $(OBJ_DIR)%.o, $(SRC))
