@@ -21,3 +21,36 @@ int parsingPort(char *argv)
     }
     return(port);
 }
+
+bool    parsing(std::string buffer) // ? changer en int pour le code d'erreur
+{
+    if (buffer.empty())
+        return (false);
+
+    std::istringstream iss(buffer);
+    std::string cmd;
+
+    iss >> cmd;
+    if (cmd.empty())
+        return (false);
+	std::string param;
+	std::getline (iss, param);
+
+	size_t start = param.find_first_not_of(" \t");
+    if (start != std::string::npos)
+        param = param.substr(start);
+    else
+        param.clear();
+
+	std::string validcmd[] = { "JOIN", "NICK", "MODE", "INVITE", "TOPIC", "KICK" }; // ? op function's
+	void (*function[])(std::string) = { &join, &nick, &mode, &invite, &topic, &kick };
+	for (int i = 0; i < 6; i++)
+	{
+	    if (validcmd[i] == cmd)
+	    {
+	        function[i](param);
+	        return (true);
+	    }
+	}
+	return (false);
+}
