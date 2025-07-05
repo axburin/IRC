@@ -3,10 +3,10 @@
 #                                                         :::      ::::::::    #
 #    Makefile                                           :+:      :+:    :+:    #
 #                                                     +:+ +:+         +:+      #
-#    By: axburin- <axburin-@student.42.fr>          +#+  +:+       +#+         #
+#    By: calberti <calberti@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/06/25 10:15:35 by axburin-          #+#    #+#              #
-#    Updated: 2025/06/30 09:12:39 by axburin-         ###   ########.fr        #
+#    Updated: 2025/07/05 13:56:51 by calberti         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -35,7 +35,9 @@ SRC = ./src/main.cpp	\
 	./src/utils/error.cpp	\
 	./src/class/Client.cpp	\
 	./src/class/Server.cpp	\
-	./src/class/Channel.cpp
+	./src/class/Channel.cpp \
+	./src/parsing/IRCMessage.cpp \
+    ./src/parsing/CommandParser.cpp
 
 OBJ_DIR       = ./obj/
 OBJ           = $(patsubst %.cpp, $(OBJ_DIR)%.o, $(SRC))
