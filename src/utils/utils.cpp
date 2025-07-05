@@ -2,7 +2,7 @@
 #include <fcntl.h>
 #include <cctype>
 
-void setNonBLocking(int fd){
+void setNonBlocking(int fd){
 	int flags = fcntl(fd, F_GETFL, 0);
 	fcntl(fd, F_SETFL, flags | O_NONBLOCK);
 }

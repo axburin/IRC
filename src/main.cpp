@@ -1,6 +1,7 @@
 #include <iostream>
 #include <cstdlib>
 #include "error.hpp"
+#include "Server.hpp"
 
 int main(int argc, char *argv[]){
 	if (argc != 3){
@@ -24,6 +25,12 @@ int main(int argc, char *argv[]){
 		}
 		std::string password(argv[2]);
 		std::cout << "all good" <<std::endl;
+		try {
+			Server ircServer(port, password);
+			ircServer.listenServer();
+		} catch (std::exception& e) {
+			std::cout << e.what() << std::endl;
+		}
 	}
 	return (0);
 }
