@@ -14,43 +14,6 @@
 #include <algorithm>
 #include <cctype>
 
-// Fonction utilitaire pour convertir int en string (C++98)
-std::string intToString(int value) {
-    std::ostringstream oss;
-    oss << value;
-    return oss.str();
-}
-
-// Parser simple temporaire
-std::vector<std::string> simpleParse(const std::string& command) {
-    std::vector<std::string> tokens;
-    std::istringstream iss(command);
-    std::string token;
-    
-    // Parser mot par mot jusqu'à rencontrer ":"
-    while (iss >> token) {
-        if (!token.empty() && token[0] == ':') {
-            // Tout le reste fait partie du message
-            tokens.push_back(token);
-            std::string remaining;
-            std::getline(iss, remaining);
-            if (!remaining.empty()) {
-                tokens.back() += remaining;
-            }
-            break;
-        } else {
-            tokens.push_back(token);
-        }
-    }
-    
-    return tokens;
-}
-
-std::string toUpper(const std::string& str) {
-    std::string result = str;
-    std::transform(result.begin(), result.end(), result.begin(), ::toupper);
-    return result;
-}
 
 Server::Server(int port, std::string password ): password(password){
 	sockaddr_in server_addr;

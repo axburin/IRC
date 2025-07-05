@@ -8,8 +8,14 @@
 #define INCORRECT_LENGTH_PASSWORD 6
 #define ONLY_VISIBLE_CHAR_PASSWORD 7
 
+#include <string>
+#include <vector>
+
 class Server;
 
+std::string intToString(int value);
+std::vector<std::string> simpleParse(const std::string& command);
+std::string toUpper(const std::string& str);                                                 
 void errorManager(int flags, Server*);
 void setNonBlocking(int fd);
 int strIsDigit(char *str);
