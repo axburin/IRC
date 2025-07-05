@@ -8,7 +8,7 @@ Server* g_server = NULL;
 
 void handle_sigint(int) {
 	if (g_server) {
-		g_server->~Server();
+		g_server->stop();
 	}
 }
 

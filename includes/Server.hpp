@@ -18,6 +18,7 @@ class Server {
 		int server_fd;
 		std::vector<int> fds;
 		std::string password;
+		bool running;
 
 	public : 
 		Server(int port, std::string password);
@@ -48,6 +49,7 @@ class Server {
 		void sendReply(Client* client, const std::string& code, const std::string& message);
 		void sendWelcomeMessages(Client* client);
 		Client* findClientByNick(const std::string& nickname);
+		void stop();
 
 		class ServerErrorException : public std::exception {
 			std::string msg;

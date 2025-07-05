@@ -55,6 +55,7 @@ std::string toUpper(const std::string& str) {
 Server::Server(int port, std::string password ): password(password){
 	sockaddr_in server_addr;
 	epoll_event event;
+	running = true;
 
 	server_fd = socket(AF_INET, SOCK_STREAM, 0);
 	if (server_fd < 0)
@@ -93,11 +94,14 @@ Server::~Server(void){
 		close(*it);
 	}
 }
+void Server::stop() {
+	running = false;
+}
 
 void Server::listenServer(void){
 	std::vector<epoll_event> events(10);
 
-	while (true) {
+	while (running) {
 		int n = epoll_wait(epoll_fd, events.data(), 10, -1);
 		for (int i = 0; i < n; ++i){
 			if (events[i].data.fd == server_fd) {
