@@ -157,15 +157,20 @@ void Server::handleClientData(int client_fd) {
 	std::string command;
 	while (client->extractCommand(command)) {
 		std::cout << "Commande reçue: " << command << std::endl;
-		processCommand(client, command);
+		
+		// Traiter la commande et vérifier si on doit continuer
+		if (!processCommand(client, command)) {
+			// Client supprimé (QUIT), arrêter immédiatement
+			return;
+		}
 	}
 }
 
-void Server::processCommand(Client* client, const std::string& command) {
+bool Server::processCommand(Client* client, const std::string& command) {
 	std::vector<std::string> tokens = simpleParse(command);
 	
 	if (tokens.empty()) {
-		return;
+		return true; // Continue
 	}
 	
 	std::string cmd = toUpper(tokens[0]);
@@ -178,6 +183,7 @@ void Server::processCommand(Client* client, const std::string& command) {
 		handleUser(client, tokens);
 	} else if (cmd == "QUIT") {
 		handleQuit(client, tokens);
+		return false; // Arrêter le traitement (client supprimé)
 	} else if (!client->isFullyRegistered()) {
 		sendError(client, "451", ":You have not registered");
 	} else {
@@ -192,6 +198,8 @@ void Server::processCommand(Client* client, const std::string& command) {
 			sendError(client, "421", cmd + " :Unknown command");
 		}
 	}
+	
+	return true; // Continue le traitement
 }
 
 void Server::handlePass(Client* client, const std::vector<std::string>& tokens) {

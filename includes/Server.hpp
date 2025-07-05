@@ -28,7 +28,7 @@ class Server {
 		// Nouvelles méthodes
 		void acceptNewClient();
 		void handleClientData(int client_fd);
-		void processCommand(Client* client, const std::string& command);
+		bool processCommand(Client* client, const std::string& command);
 		void disconnectClient(int client_fd);
 		
 		// Handlers de commandes (version simple)
