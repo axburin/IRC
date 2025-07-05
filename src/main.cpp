@@ -2,6 +2,15 @@
 #include <cstdlib>
 #include "error.hpp"
 #include "Server.hpp"
+#include <csignal>
+
+Server* g_server = NULL;
+
+void handle_sigint(int) {
+	if (g_server) {
+		g_server->~Server();
+	}
+}
 
 int main(int argc, char *argv[]){
 	if (argc != 3){
@@ -25,8 +34,10 @@ int main(int argc, char *argv[]){
 		}
 		std::string password(argv[2]);
 		std::cout << "all good" <<std::endl;
+		std::signal(SIGINT, handle_sigint);
 		try {
 			Server ircServer(port, password);
+			g_server = &ircServer;
 			ircServer.listenServer();
 		} catch (std::exception& e) {
 			std::cout << e.what() << std::endl;

@@ -30,6 +30,7 @@ class Server {
 		void handleClientData(int client_fd);
 		bool processCommand(Client* client, const std::string& command);
 		void disconnectClient(int client_fd);
+		void shutdown();
 		
 		// Handlers de commandes (version simple)
 		void handlePass(Client* client, const std::vector<std::string>& tokens);

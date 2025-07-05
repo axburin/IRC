@@ -440,6 +440,27 @@ void Server::disconnectClient(int client_fd) {
 	}
 }
 
+void Server::shutdown() {
+	std::cout << "Fermeture du serveur proprement..." << std::endl;
+
+	// Déconnexion de tous les clients
+	for (std::vector<int>::iterator it = fds.begin(); it != fds.end(); ++it) {
+		close(*it);
+	}
+
+	fds.clear();
+
+	// Supprimer tous les clients
+	clients.clear();
+
+	// Fermer les sockets principaux
+	if (server_fd >= 0)
+		close(server_fd);
+	if (epoll_fd >= 0)
+		close(epoll_fd);
+}
+
+
 // Exception
 Server::ServerErrorException::ServerErrorException(const std::string& msg): msg(msg){}
 Server::ServerErrorException::~ServerErrorException() throw(){}
