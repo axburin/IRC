@@ -1,18 +1,18 @@
 #include "Clients.hpp"
 
 // Constructeur par défaut
-Client::Client(): 
-	client_fd(-1), is_authenticated(false), has_password(false), 
+Client::Client():
+	actual_channel(NULL), client_fd(-1), is_authenticated(false), has_password(false), 
 	has_nick(false), has_user(false) {
 }
 
 Client::Client(std::string nickname, std::string username, int fd): 
-	nickname(nickname), username(username), client_fd(fd), 
+	nickname(nickname), username(username), actual_channel(NULL), client_fd(fd), 
 	is_authenticated(false), has_password(false), has_nick(false), has_user(false) {
 }
 
 Client::Client(int fd): 
-	client_fd(fd), is_authenticated(false), has_password(false), 
+	actual_channel(NULL), client_fd(fd), is_authenticated(false), has_password(false), 
 	has_nick(false), has_user(false) {
 }
 

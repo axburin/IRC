@@ -273,7 +273,15 @@ void Server::handleJoin(Client* client, const std::vector<std::string>& tokens) 
 		sendError(client, "403", channel_name + " :No such channel");
 		return;
 	}
-	
+	std::map<std::string, Channel>::iterator it = channels.find(tokens[1]);
+	if (it == channels.end())
+	{
+		if (tokens.size() < 2){
+			channels.insert(std::pair<std::string, Channel>(tokens[1], Channel(tokens[1], client->getFd(), "")));
+		}
+	} else {
+		
+	}
 	std::cout << "Client " << client->getNickname() << " rejoint " << channel_name << std::endl;
 	
 	// Pour l'instant, juste confirmer le JOIN (sans vraie gestion des canaux)

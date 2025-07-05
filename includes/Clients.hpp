@@ -4,11 +4,14 @@
 #include <string>
 #include <ctime>
 
+class Channel;
+
 class Client {
 	private :
 		std::string nickname;
 		std::string username;
 		std::string realname;
+		Channel *actual_channel;
 		int client_fd;
 		bool is_authenticated;
 		bool has_password;
