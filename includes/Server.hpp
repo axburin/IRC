@@ -23,12 +23,13 @@ class Channel;
 
 class Server {
 	private :
-		std::map<std::string, Client> clients;
-		std::map<std::string, Channel> channels;
+		std::map<std::string, Client*>* clients;
+		std::map<std::string, Channel*>* channels;
 		int epoll_fd;
 		int server_fd;
 		std::vector<int> fds;
 		std::string password;
+		bool running;
 
 	public : 
 		Server(int port, std::string password);
@@ -39,8 +40,9 @@ class Server {
 		// Nouvelles méthodes
 		void acceptNewClient();
 		void handleClientData(int client_fd);
-		void processCommand(Client* client, const std::string& command);
+		bool processCommand(Client* client, const std::string& command);
 		void disconnectClient(int client_fd);
+		void shutdown();
 		
 		// Handlers de commandes (version simple)
 		void handlePass(Client* client, const std::vector<std::string>& tokens);
@@ -59,6 +61,11 @@ class Server {
 		void sendReply(Client* client, const std::string& code, const std::string& message);
 		void sendWelcomeMessages(Client* client);
 		Client* findClientByNick(const std::string& nickname);
+
+		void changeClientChannel(Client* Client, Channel* channel);
+		void sendMessageWhenJoin(Client *Client);
+		void stop();
+
 		Channel* findChannelByName(std::string Name);
 
 		class ServerErrorException : public std::exception {

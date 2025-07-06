@@ -42,8 +42,11 @@ std::string toUpper(const std::string& str) {
 }
 
 Server::Server(int port, std::string password ): password(password){
+	clients = new std::map<std::string, Client*>;
+	channels = new std::map<std::string, Channel*>;
 	sockaddr_in server_addr;
 	epoll_event event;
+	running = true;
 
 	server_fd = socket(AF_INET, SOCK_STREAM, 0);
 	if (server_fd < 0)
@@ -82,11 +85,14 @@ Server::~Server(void){
 		close(*it);
 	}
 }
+void Server::stop() {
+	running = false;
+}
 
 void Server::listenServer(void){
 	std::vector<epoll_event> events(10);
 
-	while (true) {
+	while (running) {
 		int n = epoll_wait(epoll_fd, events.data(), 10, -1);
 		for (int i = 0; i < n; ++i){
 			if (events[i].data.fd == server_fd) {
@@ -113,7 +119,7 @@ void Server::acceptNewClient() {
 		
 		// Créer un client temporaire
 		std::string temp_key = "temp_" + intToString(client_fd);
-		clients.insert(std::make_pair(temp_key, Client(client_fd)));
+		clients->insert(std::make_pair(temp_key, new Client(client_fd)));
 		
 		std::cout << "Nouveau client connecte : fd = " << client_fd << std::endl;
 	}
@@ -146,15 +152,20 @@ void Server::handleClientData(int client_fd) {
 	std::string command;
 	while (client->extractCommand(command)) {
 		std::cout << "Commande reçue: " << command << std::endl;
-		processCommand(client, command);
+		
+		// Traiter la commande et vérifier si on doit continuer
+		if (!processCommand(client, command)) {
+			// Client supprimé (QUIT), arrêter immédiatement
+			return;
+		}
 	}
 }
 
-void Server::processCommand(Client* client, const std::string& command) {
+bool Server::processCommand(Client* client, const std::string& command) {
 	std::vector<std::string> tokens = simpleParse(command);
 	
 	if (tokens.empty()) {
-		return;
+		return true; // Continue
 	}
 	
 	std::string cmd = toUpper(tokens[0]);
@@ -167,6 +178,7 @@ void Server::processCommand(Client* client, const std::string& command) {
 		handleUser(client, tokens);
 	} else if (cmd == "QUIT") {
 		handleQuit(client, tokens);
+		return false; // Arrêter le traitement (client supprimé)
 	} else if (!client->isFullyRegistered()) {
 		sendError(client, "451", ":You have not registered");
 	} else {
@@ -181,6 +193,8 @@ void Server::processCommand(Client* client, const std::string& command) {
 			sendError(client, "421", cmd + " :Unknown command");
 		}
 	}
+	
+	return true; // Continue le traitement
 }
 
 void Server::handlePass(Client* client, const std::vector<std::string>& tokens) {
@@ -242,27 +256,75 @@ void Server::handleJoin(Client* client, const std::vector<std::string>& tokens) 
 		sendError(client, "461", "JOIN :Not enough parameters");
 		return;
 	}
-	
 	std::string channel_name = tokens[1];
-	
 	// Vérifier que c'est un nom de canal valide
 	if (channel_name.empty() || (channel_name[0] != '#' && channel_name[0] != '&')) {
 		sendError(client, "403", channel_name + " :No such channel");
 		return;
 	}
+	// if (channel_name == client->getChannel()->getName()) {
+	// 	//already on channel
+	// 	return ;
+	// }
+	std::map<std::string, Channel*>::iterator it = channels->find(channel_name);
+	if (it == channels->end())
+	{
+		if (tokens.size() < 3){
+			Channel* new_chan = new Channel(channel_name, client->getFd(), "");
+			channels->insert(std::pair<std::string, Channel*>(channel_name, new_chan));
+			changeClientChannel(client, new_chan);
+			sendMessageWhenJoin(client);
+		} else {
+			Channel* new_chan = new Channel(channel_name, client->getFd(), tokens[2]);
+			channels->insert(std::pair<std::string, Channel*>(channel_name, new_chan));
+			changeClientChannel(client, new_chan);
+			sendMessageWhenJoin(client);
+		}
+	} else {
+		Channel *join_channel = it->second;
+		if (join_channel->getIsInvitOnly()){
+			sendError(client, "473", channel_name + " :Invite only channel");
+			return ;
+		}
+		int lim = join_channel->getLimitMember();
+		std::string pass = join_channel->getPassword();
+		int nb_member = join_channel->getMembersSize();
+		if (!pass.size()){
+			if (lim == -1 || lim > nb_member){
+				changeClientChannel(client, it->second);
+				sendMessageWhenJoin(client);
+			} else {
+				sendError(client, "471", channel_name + " :Channel is full");
+			}
+		} else {
+			if (lim == -1 || lim > nb_member) {
+				if (tokens.size() != 3){
+					sendError(client, "475", channel_name + " :Bad channel key");
+				} else {
+					if (tokens[2] == it->second->getPassword()){
+						changeClientChannel(client, it->second);
+						sendMessageWhenJoin(client);
+					} else {
+						sendError(client, "475", channel_name + " :Bad channel key");
+					}
+				}
+			} else {
+				sendError(client, "471", channel_name + " :Channel is full");
+			}
+		}
+	}
+	// std::cout << "Client " << client->getNickname() << " rejoint " << channel_name << std::endl;
 	
-	std::cout << "Client " << client->getNickname() << " rejoint " << channel_name << std::endl;
+	// // Pour l'instant, juste confirmer le JOIN (sans vraie gestion des canaux)
+	// std::string join_msg = ":" + client->getPrefix() + " JOIN " + channel_name + "\r\n";
+	// send(client->getFd(), join_msg.c_str(), join_msg.length(), 0);
 	
-	// Pour l'instant, juste confirmer le JOIN (sans vraie gestion des canaux)
-	std::string join_msg = ":" + client->getPrefix() + " JOIN " + channel_name + "\r\n";
-	send(client->getFd(), join_msg.c_str(), join_msg.length(), 0);
+	// // Envoyer un topic vide
+	// sendReply(client, "331", client->getNickname() + " " + channel_name + " :No topic is set");
 	
-	// Envoyer un topic vide
-	sendReply(client, "331", client->getNickname() + " " + channel_name + " :No topic is set");
-	
-	// Envoyer la liste des noms (juste le client pour l'instant)
-	sendReply(client, "353", client->getNickname() + " = " + channel_name + " :@" + client->getNickname());
-	sendReply(client, "366", client->getNickname() + " " + channel_name + " :End of NAMES list");
+	// // Envoyer la liste des noms (juste le client pour l'instant)
+	// sendReply(client, "353", client->getNickname() + " = " + channel_name + " :@" + client->getNickname());
+	// sendReply(client, "366", client->getNickname() + " " + channel_name + " :End of NAMES list");
 }
 
 void Server::handlePrivmsg(Client* client, const std::vector<std::string>& tokens) {
@@ -347,10 +409,10 @@ void Server::handlePart(Client* client, const std::vector<std::string>& tokens) 
 
 // Ajouter cette fonction utilitaire pour trouver par nickname
 Client* Server::findClientByNick(const std::string& nickname) {
-	for (std::map<std::string, Client>::iterator it = clients.begin(); 
-		 it != clients.end(); ++it) {
-		if (it->second.getNickname() == nickname) {
-			return &(it->second);
+	for (std::map<std::string, Client*>::iterator it = clients->begin(); 
+		 it != clients->end(); ++it) {
+		if (it->second->getNickname() == nickname) {
+			return (it->second);
 		}
 	}
 	return NULL;
@@ -358,19 +420,19 @@ Client* Server::findClientByNick(const std::string& nickname) {
 
 // Utilitaires
 Client* Server::findClientByFd(int fd) {
-	for (std::map<std::string, Client>::iterator it = clients.begin(); 
-		 it != clients.end(); ++it) {
-		if (it->second.getFd() == fd) {
-			return &(it->second);
+	for (std::map<std::string, Client*>::iterator it = clients->begin(); 
+		 it != clients->end(); ++it) {
+		if (it->second->getFd() == fd) {
+			return (it->second);
 		}
 	}
 	return NULL;
 }
 
 bool Server::isNickInUse(const std::string& nickname) {
-	for (std::map<std::string, Client>::iterator it = clients.begin(); 
-		 it != clients.end(); ++it) {
-		if (it->second.getNickname() == nickname) {
+	for (std::map<std::string, Client*>::iterator it = clients->begin(); 
+		 it != clients->end(); ++it) {
+		if (it->second->getNickname() == nickname) {
 			return true;
 		}
 	}
@@ -412,14 +474,73 @@ void Server::disconnectClient(int client_fd) {
 	}
 	
 	// Retirer de la map des clients
-	for (std::map<std::string, Client>::iterator it = clients.begin(); 
-		 it != clients.end(); ++it) {
-		if (it->second.getFd() == client_fd) {
-			clients.erase(it);
+	for (std::map<std::string, Client*>::iterator it = clients->begin(); 
+		 it != clients->end(); ++it) {
+		if (it->second->getFd() == client_fd) {
+			delete it->second;
+			clients->erase(it);
 			break;
 		}
 	}
 }
+
+void Server::shutdown() {
+	std::cout << "Fermeture du serveur proprement..." << std::endl;
+
+	// Déconnexion de tous les clients
+	for (std::vector<int>::iterator it = fds.begin(); it != fds.end(); ++it) {
+		close(*it);
+	}
+
+	fds.clear();
+
+	// Supprimer tous les clients
+	clients->clear();
+
+	// Fermer les sockets principaux
+	if (server_fd >= 0)
+		close(server_fd);
+	if (epoll_fd >= 0)
+		close(epoll_fd);
+}
+
+void Server::changeClientChannel(Client* client, Channel * channel){
+	Channel* cur_client_chan = client->getChannel();
+	if (!cur_client_chan){
+		client->setChannel(channel);
+		channel->setMembers(client->getFd());
+	} else {
+		if (cur_client_chan->getMembersSize() <= 1){
+			std::map<std::string, Channel*>::iterator it = channels->find(cur_client_chan->getName());
+			if (it == channels->end()){
+				client->setChannel(channel);
+				channel->setMembers(client->getFd());
+			} else {
+				delete it->second;
+				channels->erase(it);
+				client->setChannel(channel);
+				channel->setMembers(client->getFd());
+			}
+		} else {
+			client->getChannel()->unsetMembers(client->getFd());
+			client->setChannel(channel);
+			channel->setMembers(client->getFd());
+		}
+	}
+}
+
+void Server::sendMessageWhenJoin(Client* client){
+	const std::set<int>& members = client->getChannel()->getmembers();
+	std::string join_msg = " : " + client->getNickname() + " JOIN " + client->getChannel()->getName() + "\r\n";
+	for (std::set<int>::iterator i = members.begin(); i != members.end(); i++)
+	{
+		if (*i != client->getFd()){
+			send(*i, join_msg.c_str(), join_msg.length(), 0);
+		}
+	}
+	
+}
+
 
 // Exception
 Server::ServerErrorException::ServerErrorException(const std::string& msg): msg(msg){}

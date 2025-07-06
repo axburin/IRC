@@ -4,11 +4,14 @@
 #include <string>
 #include <ctime>
 
+class Channel;
+
 class Client {
 	private :
 		std::string nickname;
 		std::string username;
 		std::string realname;
+		Channel *actual_channel;
 		int client_fd;
 		bool is_authenticated;
 		bool has_password;
@@ -23,6 +26,7 @@ class Client {
 		~Client(void);
 		
 		// Getters
+		Channel* getChannel(void)const {return actual_channel; }
 		const std::string& getNickname() const { return nickname; }
 		const std::string& getUsername() const { return username; }
 		const std::string& getRealname() const { return realname; }
@@ -34,6 +38,7 @@ class Client {
 		bool extractCommand(std::string& command);
 		
 		// Setters
+		void setChannel(Channel* chan);
 		void setNickname(const std::string& nick);
 		void setUsername(const std::string& user);
 		void setRealname(const std::string& real);
