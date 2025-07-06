@@ -3,10 +3,10 @@
 # include "Clients.hpp"
 # include "error.hpp"
 
-Channel*	Server::findChannelByName(std::string Name) // move to server.cpp
+Channel*	Server::findChannelByName(std::string Name) // need to be moved to server.cpp
 {
-	std::map<std::string, Channel>::iterator it = channels.find(Name);
-	return &(it->second);
+	std::map<std::string, Channel *>::iterator it = channels.find(Name);
+	return (it->second);
 }
 
 void	Server::handleKick(Client* client, const std::vector<std::string>& tokens)
@@ -24,24 +24,42 @@ void	Server::handleKick(Client* client, const std::vector<std::string>& tokens)
 	}
 
 	Channel* channel = findChannelByName(channel_name);
-	if (!channel)
-		return; // ! what error ?
+	if (!channel) {
+		sendError(client, "403", channel_name + " :No such channel");
+		return;
+	}
 
 	std::string kickedNick = tokens[2];
 	if (kickedNick.empty()) {
-		sendError(client, "403", kickedNick + " :empty Nickname to kick"); // ! error to check
+		sendError(client, "431", ":No nickname given");
 		return;
 	}
 
 	Client* kickedClient = findClientByNick(kickedNick);
 	if (!kickedClient) {
-		sendError(client, "404", kickedNick + " :does not exist in channel " + channel_name);
+		sendError(client, "401", kickedNick + " :does not exist in channel " + channel_name);
 		return;
 	}
 
-	if (!channel->clientOp(client->getFd()) && !channel->findClientInChannel(kickedClient->getFd()))
-	{
-
+	if (!channel->findClientInChannel(kickedClient->getFd())) {
+		sendError(client, "441", kickedNick + " " + channel_name + " :They aren't on that channel");
+		return;
 	}
+
+	if (!channel->findClientInChannel(client->getFd()))
+	{
+		sendError(client, "442", channel_name + " :You're not on that channel");
+		return;
+	}
+
+	if (!channel->clientOp(client->getFd())) {
+		sendError(client, "482", channel_name + " :You're not channel operator");
+		return;
+	}
+
+	std::string reason = tokens[4];
+	channel->unsetMembers(kickedClient->getFd());
+	std::string kickMsg = ":" + client->getNickname() + " KICK " + channel_name + " " + kickedNick + " :" + reason;
+	// TODO need to send msg to everyone etc
 }
 
