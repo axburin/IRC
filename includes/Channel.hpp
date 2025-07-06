@@ -19,6 +19,29 @@ class Channel {
 	public :
 		Channel(std::string name, int op, std::string password);
 		~Channel(void);
+
+		std::string getName(void)const;
+		std::set<int> getmembers(void)const;
+		std::set<int> getOps(void) const;
+		int getLimitMember(void) const;
+		bool getIsInvitOnly(void) const;
+		bool getIsRestrictTopic(void) const;
+		std::string getTopic(void) const;
+		std::string getPassword(void)const;
+		int getMembersSize(void)const;
+
+		void setName(std::string& name);
+		void setMembers(int fd);
+		void setOps(int fd);
+		void setLimitMember(int nb);
+		void setIsInvitOnly(bool bl);
+		void setIsRestrictedTopic(bool bl);
+		void setTopic(std::string& topic);
+		void setPassword(std::string& password);
+
+		void unsetMembers(int fd);
+		void unsetOps(int fd);
+
 };
 
 #endif

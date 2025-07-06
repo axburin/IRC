@@ -12,8 +12,8 @@ class Channel;
 
 class Server {
 	private :
-		std::map<std::string, Client> clients;
-		std::map<std::string, Channel> channels;
+		std::map<std::string, Client*>* clients;
+		std::map<std::string, Channel*>* channels;
 		int epoll_fd;
 		int server_fd;
 		std::vector<int> fds;
@@ -49,6 +49,8 @@ class Server {
 		void sendReply(Client* client, const std::string& code, const std::string& message);
 		void sendWelcomeMessages(Client* client);
 		Client* findClientByNick(const std::string& nickname);
+		void changeClientChannel(Client* Client, Channel* channel);
+		void sendMessageWhenJoin(Client *Client);
 		void stop();
 
 		class ServerErrorException : public std::exception {

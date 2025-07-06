@@ -36,9 +36,9 @@ int main(int argc, char *argv[]){
 		std::cout << "all good" <<std::endl;
 		std::signal(SIGINT, handle_sigint);
 		try {
-			Server ircServer(port, password);
-			g_server = &ircServer;
-			ircServer.listenServer();
+			Server* ircServer = new Server(port, password);
+			g_server = ircServer;
+			ircServer->listenServer();
 		} catch (std::exception& e) {
 			std::cout << e.what() << std::endl;
 		}

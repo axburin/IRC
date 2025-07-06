@@ -68,3 +68,7 @@ void Client::checkRegistration() {
 std::string Client::getPrefix() const {
 	return nickname + "!" + username + "@localhost";
 }
+
+void Client::setChannel(Channel* chan){
+	actual_channel = chan;
+}
