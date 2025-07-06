@@ -6,6 +6,17 @@
 #include <set>
 #include <map>
 #include <exception>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <sys/epoll.h>
+#include <vector>
+#include <iostream>
+#include <fcntl.h>
+#include <unistd.h>
+#include <map>
+#include <sstream>
+#include <algorithm>
+#include <cctype>
 
 class Client;
 class Channel;
@@ -41,6 +52,7 @@ class Server {
 		void handleJoin(Client* client, const std::vector<std::string>& tokens);
 		void handlePrivmsg(Client* client, const std::vector<std::string>& tokens);
 		void handlePart(Client* client, const std::vector<std::string>& tokens);
+		void handleKick(Client* client, const std::vector<std::string>& tokens);
 		
 		// Utilitaires
 		Client* findClientByFd(int fd);
@@ -49,9 +61,12 @@ class Server {
 		void sendReply(Client* client, const std::string& code, const std::string& message);
 		void sendWelcomeMessages(Client* client);
 		Client* findClientByNick(const std::string& nickname);
+
 		void changeClientChannel(Client* Client, Channel* channel);
 		void sendMessageWhenJoin(Client *Client);
 		void stop();
+
+		Channel* findChannelByName(std::string Name);
 
 		class ServerErrorException : public std::exception {
 			std::string msg;

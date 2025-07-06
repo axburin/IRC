@@ -41,6 +41,9 @@ class Channel {
 
 		void unsetMembers(int fd);
 		void unsetOps(int fd);
+ 
+		bool	findClientInChannel(int client_fd);
+		bool	clientOp(int client_op);
 
 };
 
