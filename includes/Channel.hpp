@@ -19,6 +19,9 @@ class Channel {
 	public :
 		Channel(std::string name, int op, std::string password);
 		~Channel(void);
+
+		bool	findClientInChannel(int client_fd);
+		bool	clientOp(int client_op);
 };
 
 #endif

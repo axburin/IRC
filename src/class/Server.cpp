@@ -1,18 +1,7 @@
-#include "Server.hpp"
-#include "Channel.hpp"
-#include "Clients.hpp"
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include "error.hpp"
-#include <sys/epoll.h>
-#include <vector>
-#include <iostream>
-#include <fcntl.h>
-#include <unistd.h>
-#include <map>
-#include <sstream>
-#include <algorithm>
-#include <cctype>
+# include "Server.hpp"
+# include "Channel.hpp"
+# include "Clients.hpp"
+# include "error.hpp"
 
 // Fonction utilitaire pour convertir int en string (C++98)
 std::string intToString(int value) {

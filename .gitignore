@@ -1,4 +1,4 @@
 */*.o
-IRC
+ircserv
 .vscode/
 obj/
