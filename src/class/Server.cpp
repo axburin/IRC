@@ -274,11 +274,13 @@ void Server::handleJoin(Client* client, const std::vector<std::string>& tokens) 
 			channels->insert(std::pair<std::string, Channel*>(channel_name, new_chan));
 			changeClientChannel(client, new_chan);
 			sendMessageWhenJoin(client);
+			sendMessageInfoChannel(client);
 		} else {
 			Channel* new_chan = new Channel(channel_name, client->getFd(), tokens[2]);
 			channels->insert(std::pair<std::string, Channel*>(channel_name, new_chan));
 			changeClientChannel(client, new_chan);
 			sendMessageWhenJoin(client);
+			sendMessageInfoChannel(client);
 		}
 	} else {
 		Channel *join_channel = it->second;
@@ -290,9 +292,10 @@ void Server::handleJoin(Client* client, const std::vector<std::string>& tokens) 
 		std::string pass = join_channel->getPassword();
 		int nb_member = join_channel->getMembersSize();
 		if (!pass.size()){
-			if (lim == -1 || lim > nb_member){
+			if (lim == -1 || lim >= nb_member){
 				changeClientChannel(client, it->second);
 				sendMessageWhenJoin(client);
+				sendMessageInfoChannel(client);
 			} else {
 				sendError(client, "471", channel_name + " :Channel is full");
 			}
@@ -304,6 +307,7 @@ void Server::handleJoin(Client* client, const std::vector<std::string>& tokens) 
 					if (tokens[2] == it->second->getPassword()){
 						changeClientChannel(client, it->second);
 						sendMessageWhenJoin(client);
+						sendMessageInfoChannel(client);
 					} else {
 						sendError(client, "475", channel_name + " :Bad channel key");
 					}
@@ -531,14 +535,34 @@ void Server::changeClientChannel(Client* client, Channel * channel){
 
 void Server::sendMessageWhenJoin(Client* client){
 	const std::set<int>& members = client->getChannel()->getmembers();
-	std::string join_msg = " : " + client->getNickname() + " JOIN " + client->getChannel()->getName() + "\r\n";
+	std::string join_msg = ":client! " + client->getNickname() + " JOIN " + client->getChannel()->getName() + "\r\n";
 	for (std::set<int>::iterator i = members.begin(); i != members.end(); i++)
 	{
 		if (*i != client->getFd()){
 			send(*i, join_msg.c_str(), join_msg.length(), 0);
 		}
 	}
-	
+}
+
+void Server::sendMessageInfoChannel(Client *client){
+	const std::set<int>& members = client->getChannel()->getmembers();
+	const int& fd_client = client->getFd();
+	const std::string& channel_name = client->getChannel()->getName() + "\n";
+	std::string msg = ":serveur 332 client " + channel_name + " : " + " TOPIC " + client->getChannel()->getTopic();
+	send(fd_client, msg.c_str(), msg.length(), 0);
+	msg = ":serveur 353 client = " + channel_name + " : ";
+	for (std::set<int>::iterator i = members.begin(); i != members.end(); ++i){
+		Client * cl_channel = findClientByFd(*i);
+		if (cl_channel){
+			if (cl_channel->getFd() != fd_client){
+				msg += " " + cl_channel->getNickname();
+			}
+		}
+	}
+	msg += "\n";
+	send(fd_client, msg.c_str(), msg.length(), 0);
+	msg = ":serveur 366 client " + channel_name + " :End of /NAME list\n";
+	send(fd_client, msg.c_str(), msg.length(), 0);
 }
 
 
