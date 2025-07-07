@@ -46,7 +46,7 @@ class Server {
 		
 		// Handlers de commandes (version simple)
 		void handlePass(Client* client, const std::vector<std::string>& tokens);
-		void handleNick(Client* client, const std::vector<std::string>& tokens);
+		void Handle_Nick(Client *user, const std::vector<std::string> &tokens);
 		void handleUser(Client* client, const std::vector<std::string>& tokens);
 		void handleQuit(Client* client, const std::vector<std::string>& tokens);
 		void handleJoin(Client* client, const std::vector<std::string>& tokens);
@@ -66,6 +66,8 @@ class Server {
 		void sendMessageWhenJoin(Client *client);
 		void sendMessageInfoChannel(Client* client);
 		void stop();
+		// void sendToClient(Client& client, const std::string& message);
+		// void Handle_mode(Client& client, const std::vector<std::string>& args);
 
 		Channel* findChannelByName(std::string Name);
 

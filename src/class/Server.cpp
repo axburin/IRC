@@ -173,7 +173,7 @@ bool Server::processCommand(Client* client, const std::string& command) {
 	if (cmd == "PASS") {
 		handlePass(client, tokens);
 	} else if (cmd == "NICK") {
-		handleNick(client, tokens);
+		Handle_Nick(client, tokens);
 	} else if (cmd == "USER") {
 		handleUser(client, tokens);
 	} else if (cmd == "QUIT") {
@@ -211,23 +211,47 @@ void Server::handlePass(Client* client, const std::vector<std::string>& tokens) 
 	}
 }
 
-void Server::handleNick(Client* client, const std::vector<std::string>& tokens) {
-	if (tokens.size() < 2) {
-		sendError(client, "431", ":No nickname given");
-		return;
+void Server::Handle_Nick(Client *user, const std::vector<std::string> &tokens)
+{
+	try {
+		if (tokens.size() < 2) {
+			sendError(user, "431", ":No nickname given"); // ERR_NONICKNAMEGIVEN
+			return;
+		}
+		std::string Pseudo = tokens[1];
+		if (
+			!std::isalpha(Pseudo[0]) ||
+			Pseudo.find_first_of(" ,:?@!.*#&") != std::string::npos
+		) {
+			sendError(user, "432", Pseudo + " :Erroneous nickname"); // ERR_ERRONEUSNICKNAME
+			return;
+		}
+		std::map<std::string, Client*>::iterator existing = this->clients->find(Pseudo);
+		if (existing != this->clients->end() && existing->second != user) {
+			sendError(user, "433", Pseudo + " :Nickname is already in use"); // ERR_NICKNAMEINUSE
+			return;
+		}
+
+		std::string oldPseudo = user->getNickname();
+		if (!oldPseudo.empty()) {
+			std::map<std::string, Client*>::iterator it = this->clients->find(oldPseudo);
+			if (it != this->clients->end())
+				this->clients->erase(it);
+		}
+		this->clients->insert(std::make_pair(Pseudo, user));
+		user->setNickname(Pseudo);
+
+		// if (user->isFullyRegistered()) {
+		// 	sendWelcome(user); 
+		// }
 	}
-	
-	std::string nick = tokens[1];
-	
-	// Vérifier si le nick est déjà utilisé
-	if (isNickInUse(nick)) {
-		sendError(client, "433", nick + " :Nickname is already in use");
-		return;
+	catch (const std::exception& e) {
+		std::cerr << "Erreur dans Handle_Nick : " << e.what() << std::endl;
+		sendError(user, "400", ":Unknown error while handling NICK");
 	}
-	
-	client->setNickname(nick);
-	std::cout << "Client " << client->getFd() << " nickname: " << nick << std::endl;
 }
+
+
 
 void Server::handleUser(Client* client, const std::vector<std::string>& tokens) {
 	if (tokens.size() < 5) {
@@ -571,4 +595,65 @@ Server::ServerErrorException::ServerErrorException(const std::string& msg): msg(
 Server::ServerErrorException::~ServerErrorException() throw(){}
 const char *Server::ServerErrorException::what() const throw(){
 	return msg.c_str();
+}
+
+// void Server::sendToClient(Client& client, const std::string& message) {
+//     client.send(message + "\r\n");
+// }
+
+void Server::Handle_mode(Client& client, const std::vector<std::string>& args) {
+	if(args.size() < 2)
+	{
+		sendToClient(client, "461 MODE :NOT enough parameters");
+		return;
+	}
+
+	const std::string& target = args[0];
+
+	if(target[0] == '#')
+	{
+		const std::string& modeFlags = args[1];
+
+		Channel& channel = channels[target];
+		if(!channel.userIsop(client))
+		{
+			sendToClient(client, "482 " + target + " :You're not channel operator");
+			return;
+		}
+		bool adding = true;
+		for(char flag : modeflags)
+		{
+			switch (flag) 
+			{
+				case '+':
+					adding = true;
+					break;
+				case '-':
+					adding = false;
+					break;
+				case 'i':
+					channel.setInviteOnly(adding);
+					break;
+                		case 'k':
+					if (args.size() < 3)
+						return; // missing key
+					channel.setKey(adding ? args[2] : "");
+					break;
+				case 'l':
+					if (adding && args.size() >= 3)
+						channel.setLimit(std::stoi(args[2]));
+					else
+						channel.clearLimit();
+					break;
+				case 'o':
+					if (args.size() < 3) return;
+					channel.setOp(args[2], adding);
+					break;
+				default:
+					sendToClient(client, "472 " + std::string(1, flag) + " :is unknown mode");
+			}
+		}
+		// Notifier les autres
+		broadcastToChannel(channel, ":" + client.prefix() + " MODE " + target + " " + modeFlags);
+	}
 }
