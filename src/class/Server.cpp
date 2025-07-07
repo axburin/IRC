@@ -331,8 +331,8 @@ void Server::handlePrivmsg(Client* client, const std::vector<std::string>& token
 	}
 	std::string cible = tokens[1];
 	if (cible[0] == '#' || cible[0] == '&'){
-		std::map<std::string, Channel*>::iterator it = channels->find(cible);
-		if (it == channels->end()){
+		std::map<std::string, Channel*>::iterator it = channels.find(cible);
+		if (it == channels.end()){
 			sendError(client, "403", ":No such channel\r\n");
 			return ;
 		} else {
@@ -343,8 +343,8 @@ void Server::handlePrivmsg(Client* client, const std::vector<std::string>& token
 			sendChannelPrivmsg(client, it->second, tokens[2]);
 		}
 	} else {
-		std::map<std::string, Client*>::iterator jt = clients->find(cible);
-		if (jt == clients->end()){
+		std::map<std::string, Client*>::iterator jt = clients.find(cible);
+		if (jt == clients.end()){
 			sendError(client, "401", ":No such nick\r\n");
 			return ;
 		} else {
