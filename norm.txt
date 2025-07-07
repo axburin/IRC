@@ -90,4 +90,9 @@ Commande :
 		- Seul un operateur peut KICK
 		- un comment peut etre fourni
 		- possibilite de kick plusieurs user de plusieurs channel d'un coup mais a discuter. (tres complexe et notation theorique alors que reel pas supporter)
+
+	-PRIVMSG <cible> :<message>
+		- <cible> est soit un client ou un serveur
+		- <message> est toujours preceder de ":" si <message contient des espaces;
+		- ne peu envoyer de message dansun channel ou il n'est pas
 */

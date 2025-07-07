@@ -193,7 +193,6 @@ bool Server::processCommand(Client* client, const std::string& command) {
 			sendError(client, "421", cmd + " :Unknown command");
 		}
 	}
-	
 	return true; // Continue le traitement
 }
 
@@ -267,8 +266,7 @@ void Server::handleJoin(Client* client, const std::vector<std::string>& tokens) 
 	// 	return ;
 	// }
 	std::map<std::string, Channel*>::iterator it = channels->find(channel_name);
-	if (it == channels->end())
-	{
+	if (it == channels->end()){
 		if (tokens.size() < 3){
 			Channel* new_chan = new Channel(channel_name, client->getFd(), "");
 			channels->insert(std::pair<std::string, Channel*>(channel_name, new_chan));
@@ -317,67 +315,85 @@ void Server::handleJoin(Client* client, const std::vector<std::string>& tokens) 
 			}
 		}
 	}
-	// std::cout << "Client " << client->getNickname() << " rejoint " << channel_name << std::endl;
-	
-	// // Pour l'instant, juste confirmer le JOIN (sans vraie gestion des canaux)
-	// std::string join_msg = ":" + client->getPrefix() + " JOIN " + channel_name + "\r\n";
-	// send(client->getFd(), join_msg.c_str(), join_msg.length(), 0);
-	
-	// // Envoyer un topic vide
-	// sendReply(client, "331", client->getNickname() + " " + channel_name + " :No topic is set");
-	
-	// // Envoyer la liste des noms (juste le client pour l'instant)
-	// sendReply(client, "353", client->getNickname() + " = " + channel_name + " :@" + client->getNickname());
-	// sendReply(client, "366", client->getNickname() + " " + channel_name + " :End of NAMES list");
 }
 
 void Server::handlePrivmsg(Client* client, const std::vector<std::string>& tokens) {
-	if (tokens.size() < 2) {
-		sendError(client, "411", ":No recipient given");
-		return;
+	if (tokens.size() < 2){
+		sendError(client, "411", ":No recipient given\r\n");
+		return ;
 	}
-	
-	// Reconstituer le message (tout après le target)
-	std::string target = tokens[1];
-	std::string message = "";
-	
-	// Trouver le début du message (après ":")
-	for (size_t i = 2; i < tokens.size(); i++) {
-		if (i == 2 && !tokens[i].empty() && tokens[i][0] == ':') {
-			// Enlever le ":" du début
-			message = tokens[i].substr(1);
+	if (tokens.size() < 3){
+		sendError(client, "412", ":No text to send\r\n");
+		return ;
+	}
+	std::string cible = tokens[1];
+	if (cible[0] == '#' || cible[0] == '&'){
+		std::map<std::string, Channel*>::iterator it = channels->find(cible);
+		if (it == channels->end()){
+			sendError(client, "403", ":No such channel\r\n");
+			return ;
 		} else {
-			if (!message.empty()) message += " ";
-			message += tokens[i];
+			if (it->second != client->getChannel()){
+				sendError(client, "442", ":Not on the channel\r\n");
+				return ;
+			}
+			sendChannelPrivmsg(client, it->second, tokens[2]);
 		}
-	}
-	
-	if (message.empty()) {
-		sendError(client, "412", ":No text to send");
-		return;
-	}
-	
-	std::cout << "PRIVMSG de " << client->getNickname() 
-			  << " vers " << target << ": " << message << std::endl;
-	
-	if (target[0] == '#' || target[0] == '&') {
-		// Message vers un canal - pour l'instant, juste echo vers l'expéditeur
-		std::cout << "Message canal: " << target << std::endl;
-		
-		// Echo vers l'expéditeur pour confirmer (temporaire)
-		std::string echo = ":" + client->getPrefix() + " PRIVMSG " + target + " :" + message + "\r\n";
-		send(client->getFd(), echo.c_str(), echo.length(), 0);
-		
 	} else {
-		// Message privé vers un utilisateur
-		Client* target_client = findClientByNick(target);
-		if (target_client) {
-			std::string privmsg = ":" + client->getPrefix() + " PRIVMSG " + target + " :" + message + "\r\n";
-			send(target_client->getFd(), privmsg.c_str(), privmsg.length(), 0);
+		std::map<std::string, Client*>::iterator jt = clients->find(cible);
+		if (jt == clients->end()){
+			sendError(client, "401", ":No such nick\r\n");
+			return ;
 		} else {
-			sendError(client, "401", target + " :No such nick/channel");
+			if (!jt->second->isAuthenticated()){
+				sendError(client, "451", ":NOt registered\r\n");
+				return ;
+			}
+			sendClientPrivmsg(client, jt->second, tokens[2]);
 		}
 	}
+	
+	// // Reconstituer le message (tout après le target)
+	// std::string target = tokens[1];
+	// std::string message = "";
+	
+	// // Trouver le début du message (après ":")
+	// for (size_t i = 2; i < tokens.size(); i++) {
+	// 	if (i == 2 && !tokens[i].empty() && tokens[i][0] == ':') {
+	// 		// Enlever le ":" du début
+	// 		message = tokens[i].substr(1);
+	// 	} else {
+	// 		if (!message.empty()) message += " ";
+	// 		message += tokens[i];
+	// 	}
+	// }
+	
+	// if (message.empty()) {
+	// 	sendError(client, "412", ":No text to send");
+	// 	return;
+	// }
+	
+	// std::cout << "PRIVMSG de " << client->getNickname() 
+	// 		  << " vers " << target << ": " << message << std::endl;
+	
+	// if (target[0] == '#' || target[0] == '&') {
+	// 	// Message vers un canal - pour l'instant, juste echo vers l'expéditeur
+	// 	std::cout << "Message canal: " << target << std::endl;
+		
+	// 	// Echo vers l'expéditeur pour confirmer (temporaire)
+	// 	std::string echo = ":" + client->getPrefix() + " PRIVMSG " + target + " :" + message + "\r\n";
+	// 	send(client->getFd(), echo.c_str(), echo.length(), 0);
+		
+	// } else {
+	// 	// Message privé vers un utilisateur
+	// 	Client* target_client = findClientByNick(target);
+	// 	if (target_client) {
+	// 		std::string privmsg = ":" + client->getPrefix() + " PRIVMSG " + target + " :" + message + "\r\n";
+	// 		send(target_client->getFd(), privmsg.c_str(), privmsg.length(), 0);
+	// 	} else {
+	// 		sendError(client, "401", target + " :No such nick/channel");
+	// 	}
+	// }
 }
 
 void Server::handlePart(Client* client, const std::vector<std::string>& tokens) {
@@ -565,6 +581,28 @@ void Server::sendMessageInfoChannel(Client *client){
 	send(fd_client, msg.c_str(), msg.length(), 0);
 }
 
+void Server::sendClientPrivmsg(Client *sender, Client* receiver, std::string msg){
+	std::string formt_msg;
+	if (msg[0] == ':')
+		formt_msg = ":" + sender->getNickname() + " PRIVMSG" + receiver->getNickname() + " " + msg + "\n";
+	else
+		formt_msg = ":" + sender->getNickname() + " PRIVMSG" + receiver->getNickname() + " :" + msg + "\n";
+	send(receiver->getFd(), formt_msg.c_str(), formt_msg.length(), 0);
+}
+
+void Server::sendChannelPrivmsg(Client *sender, Channel* chan_receiver, std::string msg){
+	std::string formt_msg;
+	if (msg[0] == ':')
+		formt_msg = ":" + sender->getNickname() + " PRIVMSG" + chan_receiver->getName() + " " + msg + "\n";
+	else
+		formt_msg = ":" + sender->getNickname() + " PRIVMSG" + chan_receiver->getName() + " " + msg + "\n";
+	const std::set<int> members = chan_receiver->getmembers();
+	for (std::set<int>::iterator i = members.begin(); i != members.end(); i++){
+		if (sender->getFd() != *i){
+			send(*i, formt_msg.c_str(), formt_msg.length(), 0);
+		}
+	}
+}
 
 // Exception
 Server::ServerErrorException::ServerErrorException(const std::string& msg): msg(msg){}
