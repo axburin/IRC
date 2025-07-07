@@ -6,7 +6,10 @@
 Channel*	Server::findChannelByName(std::string Name) // need to be moved to server.cpp
 {
 	std::map<std::string, Channel *>::iterator it = channels.find(Name);
-	return (it->second);
+	if (it != channels.end())
+		return (it->second);
+	else
+		return(NULL);
 }
 
 void	Server::handleKick(Client* client, const std::vector<std::string>& tokens)
@@ -37,7 +40,7 @@ void	Server::handleKick(Client* client, const std::vector<std::string>& tokens)
 
 	Client* kickedClient = findClientByNick(kickedNick);
 	if (!kickedClient) {
-		sendError(client, "401", kickedNick + " :does not exist in channel " + channel_name);
+		sendError(client, "401", kickedNick + " :does not exist");
 		return;
 	}
 
@@ -57,9 +60,27 @@ void	Server::handleKick(Client* client, const std::vector<std::string>& tokens)
 		return;
 	}
 
-	std::string reason = tokens[4];
+	std::string reason = "No reason given";
+	if (tokens.size() >= 4) {
+		reason = tokens[3];
+		if (reason[0] == ':') {
+			reason = reason.substr(1);
+		}
+		for (size_t i = 4; i < tokens.size(); i++) {
+			reason += " " + tokens[i];
+		}
+	}
 	channel->unsetMembers(kickedClient->getFd());
-	std::string kickMsg = ":" + client->getNickname() + " KICK " + channel_name + " " + kickedNick + " :" + reason;
-	// TODO need to send msg to everyone etc
+	std::string kickMsg = ":" + client->getNickname() + " KICK " + channel_name + " " + kickedNick + " :" + reason + "\r\n";
+	const std::set<int> members = channel->getmembers();
+
+    for (std::set<int>::iterator i = members.begin(); i != members.end(); i++) {
+        send(*i, kickMsg.c_str(), kickMsg.length(), 0);
+    }
+    
+    kickedClient->setChannel(NULL);
+	if (channel->clientOp(kickedClient->getFd())) {
+		channel->unsetOps(kickedClient->getFd());
+	}
 }
 
