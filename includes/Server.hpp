@@ -23,8 +23,8 @@ class Channel;
 
 class Server {
 	private :
-		std::map<std::string, Client*>* clients;
-		std::map<std::string, Channel*>* channels;
+		std::map<std::string, Client*> clients;
+		std::map<std::string, Channel*> channels;
 		int epoll_fd;
 		int server_fd;
 		std::vector<int> fds;

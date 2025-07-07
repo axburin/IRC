@@ -119,7 +119,7 @@ bool	Channel::clientOp(int client_fd)
 {
 	std::set<int>::iterator it = ops.find(client_fd);
 
-	if (it != members.end())
+	if (it != ops.end())
 		return (true);
 	else
 		return (false);

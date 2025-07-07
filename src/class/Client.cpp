@@ -1,4 +1,7 @@
-#include "Clients.hpp"
+# include "Server.hpp"
+# include "Channel.hpp"
+# include "Clients.hpp"
+# include "error.hpp"
 
 // Constructeur par défaut
 Client::Client():
@@ -35,7 +38,6 @@ bool Client::extractCommand(std::string& command) {
 	// Retirer du buffer
 	size_t erase_len = (receive_buffer[pos] == '\r') ? pos + 2 : pos + 1;
 	receive_buffer.erase(0, erase_len);
-	
 	return true;
 }
 

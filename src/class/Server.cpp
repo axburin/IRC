@@ -41,9 +41,9 @@ std::string toUpper(const std::string& str) {
     return result;
 }
 
-Server::Server(int port, std::string password ): password(password){
-	clients = new std::map<std::string, Client*>;
-	channels = new std::map<std::string, Channel*>;
+Server::Server(int port, std::string password ): password(password) {
+	// clients = new std::map<std::string, Client*>;
+	// channels = new std::map<std::string, Channel*>;
 	sockaddr_in server_addr;
 	epoll_event event;
 	running = true;
@@ -119,7 +119,7 @@ void Server::acceptNewClient() {
 		
 		// Créer un client temporaire
 		std::string temp_key = "temp_" + intToString(client_fd);
-		clients->insert(std::make_pair(temp_key, new Client(client_fd)));
+		clients.insert(std::make_pair(temp_key, new Client(client_fd)));
 		
 		std::cout << "Nouveau client connecte : fd = " << client_fd << std::endl;
 	}
@@ -172,6 +172,8 @@ bool Server::processCommand(Client* client, const std::string& command) {
 	
 	if (cmd == "PASS") {
 		handlePass(client, tokens);
+	} else if (cmd == "KICK") {
+		handleKick(client, tokens);
 	} else if (cmd == "NICK") {
 		handleNick(client, tokens);
 	} else if (cmd == "USER") {
@@ -265,17 +267,18 @@ void Server::handleJoin(Client* client, const std::vector<std::string>& tokens) 
 	// 	//already on channel
 	// 	return ;
 	// }
-	std::map<std::string, Channel*>::iterator it = channels->find(channel_name);
-	if (it == channels->end()){
+	std::map<std::string, Channel*>::iterator it = channels.find(channel_name);
+	if (it == channels.end())
+	{
 		if (tokens.size() < 3){
 			Channel* new_chan = new Channel(channel_name, client->getFd(), "");
-			channels->insert(std::pair<std::string, Channel*>(channel_name, new_chan));
+			channels.insert(std::pair<std::string, Channel*>(channel_name, new_chan));
 			changeClientChannel(client, new_chan);
 			sendMessageWhenJoin(client);
 			sendMessageInfoChannel(client);
 		} else {
 			Channel* new_chan = new Channel(channel_name, client->getFd(), tokens[2]);
-			channels->insert(std::pair<std::string, Channel*>(channel_name, new_chan));
+			channels.insert(std::pair<std::string, Channel*>(channel_name, new_chan));
 			changeClientChannel(client, new_chan);
 			sendMessageWhenJoin(client);
 			sendMessageInfoChannel(client);
@@ -429,8 +432,8 @@ void Server::handlePart(Client* client, const std::vector<std::string>& tokens) 
 
 // Ajouter cette fonction utilitaire pour trouver par nickname
 Client* Server::findClientByNick(const std::string& nickname) {
-	for (std::map<std::string, Client*>::iterator it = clients->begin(); 
-		 it != clients->end(); ++it) {
+	for (std::map<std::string, Client*>::iterator it = clients.begin(); 
+		 it != clients.end(); ++it) {
 		if (it->second->getNickname() == nickname) {
 			return (it->second);
 		}
@@ -440,8 +443,8 @@ Client* Server::findClientByNick(const std::string& nickname) {
 
 // Utilitaires
 Client* Server::findClientByFd(int fd) {
-	for (std::map<std::string, Client*>::iterator it = clients->begin(); 
-		 it != clients->end(); ++it) {
+	for (std::map<std::string, Client*>::iterator it = clients.begin(); 
+		 it != clients.end(); ++it) {
 		if (it->second->getFd() == fd) {
 			return (it->second);
 		}
@@ -450,8 +453,8 @@ Client* Server::findClientByFd(int fd) {
 }
 
 bool Server::isNickInUse(const std::string& nickname) {
-	for (std::map<std::string, Client*>::iterator it = clients->begin(); 
-		 it != clients->end(); ++it) {
+	for (std::map<std::string, Client*>::iterator it = clients.begin(); 
+		 it != clients.end(); ++it) {
 		if (it->second->getNickname() == nickname) {
 			return true;
 		}
@@ -494,11 +497,11 @@ void Server::disconnectClient(int client_fd) {
 	}
 	
 	// Retirer de la map des clients
-	for (std::map<std::string, Client*>::iterator it = clients->begin(); 
-		 it != clients->end(); ++it) {
+	for (std::map<std::string, Client*>::iterator it = clients.begin(); 
+		 it != clients.end(); ++it) {
 		if (it->second->getFd() == client_fd) {
 			delete it->second;
-			clients->erase(it);
+			clients.erase(it);
 			break;
 		}
 	}
@@ -515,7 +518,7 @@ void Server::shutdown() {
 	fds.clear();
 
 	// Supprimer tous les clients
-	clients->clear();
+	clients.clear();
 
 	// Fermer les sockets principaux
 	if (server_fd >= 0)
@@ -531,13 +534,13 @@ void Server::changeClientChannel(Client* client, Channel * channel){
 		channel->setMembers(client->getFd());
 	} else {
 		if (cur_client_chan->getMembersSize() <= 1){
-			std::map<std::string, Channel*>::iterator it = channels->find(cur_client_chan->getName());
-			if (it == channels->end()){
+			std::map<std::string, Channel*>::iterator it = channels.find(cur_client_chan->getName());
+			if (it == channels.end()){
 				client->setChannel(channel);
 				channel->setMembers(client->getFd());
 			} else {
 				delete it->second;
-				channels->erase(it);
+				channels.erase(it);
 				client->setChannel(channel);
 				channel->setMembers(client->getFd());
 			}
