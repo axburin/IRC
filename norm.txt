@@ -62,6 +62,13 @@ Commande :
 		- permet de joindre un serveur. Si la key existe elle doit etre donnee.
 		- liste de ban ? si oui on doit check que le user n'em fait pas partie.
 		- un message est envoye sur le channel avec le nickname du user qui a join. ":<nickname> JOIN #<channel>"
+		-message a envoyer :
+			- pour le client :
+				- :serveur 332 client <channel> : <channel_topic> // channel du topic
+				- :serveur 353 client = <channel> : <operator><client>{ <operator><client>} // liste des clients sur le topic
+				- :serveur 366 client <channel> :End of /NAMEs list // fin de la liste du topic
+			- pour les clients du channel :
+				- :client!<user>@<host> JOIN :<channel> //nouveau client rejoin le channel
 
 	-MODE <channel> {[+|-] o|i|t|k|l} [<limit>] [<user>] [<key>]:
 		- limit doit etre donner si on utilise +l
@@ -83,4 +90,9 @@ Commande :
 		- Seul un operateur peut KICK
 		- un comment peut etre fourni
 		- possibilite de kick plusieurs user de plusieurs channel d'un coup mais a discuter. (tres complexe et notation theorique alors que reel pas supporter)
+
+	-PRIVMSG <cible> :<message>
+		- <cible> est soit un client ou un serveur
+		- <message> est toujours preceder de ":" si <message contient des espaces;
+		- ne peu envoyer de message dansun channel ou il n'est pas
 */

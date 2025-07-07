@@ -59,11 +59,13 @@ class Server {
 		bool isNickInUse(const std::string& nickname);
 		void sendError(Client* client, const std::string& code, const std::string& message);
 		void sendReply(Client* client, const std::string& code, const std::string& message);
-		void sendWelcomeMessages(Client* client);
+		void sendClientPrivmsg(Client* sender, Client* receiver, std::string msg);
+		void sendChannelPrivmsg(Client* sender, Channel* chan_receiver, std::string msg);		void sendWelcomeMessages(Client* client);
 		Client* findClientByNick(const std::string& nickname);
 
-		void changeClientChannel(Client* Client, Channel* channel);
-		void sendMessageWhenJoin(Client *Client);
+		void changeClientChannel(Client* client, Channel* channel);
+		void sendMessageWhenJoin(Client *client);
+		void sendMessageInfoChannel(Client* client);
 		void stop();
 
 		Channel* findChannelByName(std::string Name);
