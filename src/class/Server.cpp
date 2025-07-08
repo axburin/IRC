@@ -1,7 +1,8 @@
-# include "Server.hpp"
-# include "Channel.hpp"
-# include "Clients.hpp"
-# include "error.hpp"
+#include "Server.hpp"
+#include "Channel.hpp"
+#include "Clients.hpp"
+#include "error.hpp"
+
 
 // Fonction utilitaire pour convertir int en string (C++98)
 std::string intToString(int value) {
@@ -175,7 +176,7 @@ bool Server::processCommand(Client* client, const std::string& command) {
 	} else if (cmd == "KICK") {
 		handleKick(client, tokens);
 	} else if (cmd == "NICK") {
-		handleNick(client, tokens);
+		Handle_Nick(client, tokens);
 	} else if (cmd == "USER") {
 		handleUser(client, tokens);
 	} else if (cmd == "QUIT") {
@@ -212,23 +213,47 @@ void Server::handlePass(Client* client, const std::vector<std::string>& tokens) 
 	}
 }
 
-void Server::handleNick(Client* client, const std::vector<std::string>& tokens) {
-	if (tokens.size() < 2) {
-		sendError(client, "431", ":No nickname given");
-		return;
+void Server::Handle_Nick(Client *user, const std::vector<std::string> &tokens)
+{
+	try {
+		if (tokens.size() < 2) {
+			sendError(user, "431", ":No nickname given"); // ERR_NONICKNAMEGIVEN
+			return;
+		}
+		std::string Pseudo = tokens[1];
+		if (
+			!std::isalpha(Pseudo[0]) ||
+			Pseudo.find_first_of(" ,:?@!.*#&") != std::string::npos
+		) {
+			sendError(user, "432", Pseudo + " :Erroneous nickname"); // ERR_ERRONEUSNICKNAME
+			return;
+		}
+		std::map<std::string, Client*>::iterator existing = this->clients->find(Pseudo);
+		if (existing != this->clients->end() && existing->second != user) {
+			sendError(user, "433", Pseudo + " :Nickname is already in use"); // ERR_NICKNAMEINUSE
+			return;
+		}
+
+		std::string oldPseudo = user->getNickname();
+		if (!oldPseudo.empty()) {
+			std::map<std::string, Client*>::iterator it = this->clients->find(oldPseudo);
+			if (it != this->clients->end())
+				this->clients->erase(it);
+		}
+		this->clients->insert(std::make_pair(Pseudo, user));
+		user->setNickname(Pseudo);
+
+		// if (user->isFullyRegistered()) {
+		// 	sendWelcome(user); 
+		// }
 	}
-	
-	std::string nick = tokens[1];
-	
-	// Vérifier si le nick est déjà utilisé
-	if (isNickInUse(nick)) {
-		sendError(client, "433", nick + " :Nickname is already in use");
-		return;
+	catch (const std::exception& e) {
+		std::cerr << "Erreur dans Handle_Nick : " << e.what() << std::endl;
+		sendError(user, "400", ":Unknown error while handling NICK");
 	}
-	
-	client->setNickname(nick);
-	std::cout << "Client " << client->getFd() << " nickname: " << nick << std::endl;
 }
+
+
 
 void Server::handleUser(Client* client, const std::vector<std::string>& tokens) {
 	if (tokens.size() < 5) {
@@ -612,4 +637,142 @@ Server::ServerErrorException::ServerErrorException(const std::string& msg): msg(
 Server::ServerErrorException::~ServerErrorException() throw(){}
 const char *Server::ServerErrorException::what() const throw(){
 	return msg.c_str();
+}
+
+// void Server::sendToClient(Client& client, const std::string& message) {
+//     client.send(message + "\r\n");
+// }
+
+void Server::Handle_mode(Client& client, const std::vector<std::string>& args) {
+    if (args.size() < 2) {
+        sendToClient(client, "461 MODE :Not enough parameters");
+        return;
+    }
+
+    const std::string& target = args[0];
+
+    if (target[0] == '#') {
+        const std::string& modeFlags = args[1];
+
+        // Ensure the channel exists
+        auto it = channels->find(target);
+        if (it == channels->end()) {
+            sendToClient(client, "403 " + target + " :No such channel");
+            return;
+        }
+
+        Channel& channel = *(it->second);
+        if (!channel.userIsop(client)) {
+            sendToClient(client, "482 " + target + " :You're not channel operator");
+            return;
+        }
+
+        bool adding = true;
+        for (char flag : modeFlags) {
+            switch (flag) {
+                case '+':
+                    adding = true;
+                    break;
+                case '-':
+                    adding = false;
+                    break;
+                case 'i':
+                    channel.setInviteOnly(adding);
+                    break;
+                case 'k':
+                    if (args.size() < 3) {
+                        sendToClient(client, "461 MODE :Missing key parameter");
+                        return;
+                    }
+                    channel.setKey(adding ? args[2] : "");
+                    break;
+                case 'l':
+                    if (adding && args.size() >= 3) {
+                        try {
+                            channel.setLimit(std::stoi(args[2]));
+                        } catch (const std::exception&) {
+                            sendToClient(client, "461 MODE :Invalid limit parameter");
+                            return;
+                        }
+                    } else {
+                        channel.clearLimit();
+                    }
+                    break;
+                case 'o':
+                    if (args.size() < 3) {
+                        sendToClient(client, "461 MODE :Missing operator parameter");
+                        return;
+                    }
+                    channel.setOp(args[2], adding);
+                    break;
+                default:
+                    sendToClient(client, "472 " + std::string(1, flag) + " :is unknown mode");
+            }
+        }
+
+        // Notify other members in the channel
+        broadcastToChannel(channel, ":" + client.prefix() + " MODE " + target + " " + modeFlags);
+    } else {
+        sendToClient(client, "403 " + target + " :No such channel");
+    }
+}
+
+// Utility function to send a message to a specific client
+void Server::sendToClient(Client& client, const std::string& message) {
+    std::string formattedMessage = message + "\r\n";
+    send(client.getFd(), formattedMessage.c_str(), formattedMessage.length(), 0);
+}
+
+// Utility function to broadcast a message to all members of a channel
+void Server::broadcastToChannel(Channel& channel, const std::string& message) {
+    const std::set<int>& members = channel.getmembers();
+    for (int fd : members) {
+        send(fd, (message + "\r\n").c_str(), message.length() + 2, 0);
+    }
+}
+
+void Server::Handle_topic(Client* client, const std::vector<std::string>& tokens)
+{
+	if (tokens.size() < 2) {
+		sendError(client, "461", "TOPIC :Not enough parameters");
+		return;
+	}
+
+	std::string channel_name = tokens[1];
+
+	std::map<std::string, Channel*>::iterator it = channels->find(channel_name);
+	if (it == channels->end()) {
+		sendError(client, "403", channel_name + " :No such channel");
+		return;
+	}
+
+	Channel* channel = it->second;
+
+	// If no topic display current
+	if (tokens.size() == 2) {
+		if (channel->getTopic().empty()) {
+			sendReply(client, "331", channel_name + " :No topic is set");
+		} else {
+			sendReply(client, "332", channel_name + " :" + channel->getTopic());
+		}
+		return;
+	}
+
+	// Check  allowed to change 
+	if (channel->isTopicProtected() && !channel->userIsop(client)) {
+		sendError(client, "482", channel_name + " :You're not channel operator");
+		return;
+	}
+
+	// Set
+	std::string new_topic = tokens[2];
+	for (size_t i = 3; i < tokens.size(); ++i) {
+		new_topic += " " + tokens[i];
+	}
+
+	channel->setTopic(new_topic);
+
+	// Notify all members of the channel about the topic change
+	std::string topic_msg = ":" + client->getPrefix() + " TOPIC " + channel_name + " :" + new_topic;
+	broadcastToChannel(*channel, topic_msg);
 }
