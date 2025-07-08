@@ -3,10 +3,10 @@
 #                                                         :::      ::::::::    #
 #    Makefile                                           :+:      :+:    :+:    #
 #                                                     +:+ +:+         +:+      #
-#    By: mkaliszc <mkaliszc@student.42.fr>          +#+  +:+       +#+         #
+#    By: axburin- <axburin-@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/06/25 10:15:35 by axburin-          #+#    #+#              #
-#    Updated: 2025/07/07 15:14:42 by mkaliszc         ###   ########.fr        #
+#    Updated: 2025/07/08 10:39:15 by axburin-         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -33,12 +33,12 @@ WHITE = \033[0;97m
 SRC = ./src/main.cpp	\
 	./src/utils/utils.cpp	\
 	./src/utils/error.cpp	\
+	./src/utils/irc_utils.cpp	\
 	./src/class/Client.cpp	\
 	./src/class/Server.cpp	\
 	./src/class/Channel.cpp \
 	./src/parsing/IRCMessage.cpp \
     ./src/parsing/CommandParser.cpp \
-	./src/class/Server_command.cpp
 
 OBJ_DIR       = ./obj/
 OBJ           = $(patsubst %.cpp, $(OBJ_DIR)%.o, $(SRC))
