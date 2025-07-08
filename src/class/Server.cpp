@@ -37,11 +37,11 @@ std::vector<std::string> simpleParse(const std::string& command) {
     return tokens;
 }
 
-std::string toUpper(const std::string& str) {
-    std::string result = str;
-    std::transform(result.begin(), result.end(), result.begin(), ::toupper);
-    return result;
-}
+// std::string toUpper2(const std::string& str) {
+//     std::string result = str;
+//     std::transform(result.begin(), result.end(), result.begin(), ::toupper);
+//     return result;
+// }
 
 Server::Server(int port, std::string password ): password(password) {
 	// clients = new std::map<std::string, Client*>;
@@ -170,7 +170,7 @@ bool Server::processCommand(Client* client, const std::string& command) {
 		return true; // Continue
 	}
 	
-	std::string cmd = toUpper(tokens[0]);
+	std::string cmd = tokens[0];
 	
 	if (cmd == "PASS") {
 		handlePass(client, tokens);
@@ -193,6 +193,8 @@ bool Server::processCommand(Client* client, const std::string& command) {
 			handlePrivmsg(client, tokens);
 		} else if (cmd == "PART") {
 			handlePart(client, tokens);
+		} else if (cmd == "TOPIC") {
+			Handle_topic(client, tokens);
 		} else {
 			sendError(client, "421", cmd + " :Unknown command");
 		}
@@ -229,20 +231,31 @@ void Server::Handle_Nick(Client *user, const std::vector<std::string> &tokens)
 			sendError(user, "432", Pseudo + " :Erroneous nickname"); // ERR_ERRONEUSNICKNAME
 			return;
 		}
-		std::map<std::string, Client*>::iterator existing = this->clients->find(Pseudo);
-		if (existing != this->clients->end() && existing->second != user) {
+		std::map<std::string, Client*>::iterator existing = this->clients.find(Pseudo);
+		if (existing != this->clients.end() && existing->second != user) {
 			sendError(user, "433", Pseudo + " :Nickname is already in use"); // ERR_NICKNAMEINUSE
 			return;
 		}
 
-		std::string oldPseudo = user->getNickname();
-		if (!oldPseudo.empty()) {
-			std::map<std::string, Client*>::iterator it = this->clients->find(oldPseudo);
-			if (it != this->clients->end())
-				this->clients->erase(it);
+		// std::string oldPseudo = user->getNickname();
+		// if (!oldPseudo.empty()) {
+		// 	std::map<std::string, Client*>::iterator it = this->clients.find(oldPseudo);
+		// 	if (it != this->clients.end())
+		// 		this->clients.erase(it);
+		// }
+		for (std::map<std::string, Client*>::iterator it = clients.begin(); it != clients.end(); it++)
+		{
+			if (it->second == user){
+				Client *ptrClient = user;
+				clients.erase(it);
+				clients[Pseudo] = ptrClient;
+				user->setNickname(Pseudo);
+			}
 		}
-		this->clients->insert(std::make_pair(Pseudo, user));
-		user->setNickname(Pseudo);
+		
+		// this->clients.insert(std::make_pair(Pseudo, user));
+		std::cout << "nombre de clients :" << clients.size() << std::endl;
+		// user->setNickname(Pseudo);
 
 		// if (user->isFullyRegistered()) {
 		// 	sendWelcome(user); 
@@ -284,16 +297,13 @@ void Server::handleJoin(Client* client, const std::vector<std::string>& tokens) 
 		return;
 	}
 	std::string channel_name = tokens[1];
-	// Vérifier que c'est un nom de canal valide
 	if (channel_name.empty() || (channel_name[0] != '#' && channel_name[0] != '&')) {
 		sendError(client, "403", channel_name + " :No such channel");
 		return;
 	}
-	// if (channel_name == client->getChannel()->getName()) {
-	// 	//already on channel
-	// 	return ;
-	// }
 	std::map<std::string, Channel*>::iterator it = channels.find(channel_name);
+	if (it->second == client->getChannel())
+		return ;
 	if (it == channels.end())
 	{
 		if (tokens.size() < 3){
@@ -381,48 +391,6 @@ void Server::handlePrivmsg(Client* client, const std::vector<std::string>& token
 			sendClientPrivmsg(client, jt->second, tokens[2]);
 		}
 	}
-	
-	// // Reconstituer le message (tout après le target)
-	// std::string target = tokens[1];
-	// std::string message = "";
-	
-	// // Trouver le début du message (après ":")
-	// for (size_t i = 2; i < tokens.size(); i++) {
-	// 	if (i == 2 && !tokens[i].empty() && tokens[i][0] == ':') {
-	// 		// Enlever le ":" du début
-	// 		message = tokens[i].substr(1);
-	// 	} else {
-	// 		if (!message.empty()) message += " ";
-	// 		message += tokens[i];
-	// 	}
-	// }
-	
-	// if (message.empty()) {
-	// 	sendError(client, "412", ":No text to send");
-	// 	return;
-	// }
-	
-	// std::cout << "PRIVMSG de " << client->getNickname() 
-	// 		  << " vers " << target << ": " << message << std::endl;
-	
-	// if (target[0] == '#' || target[0] == '&') {
-	// 	// Message vers un canal - pour l'instant, juste echo vers l'expéditeur
-	// 	std::cout << "Message canal: " << target << std::endl;
-		
-	// 	// Echo vers l'expéditeur pour confirmer (temporaire)
-	// 	std::string echo = ":" + client->getPrefix() + " PRIVMSG " + target + " :" + message + "\r\n";
-	// 	send(client->getFd(), echo.c_str(), echo.length(), 0);
-		
-	// } else {
-	// 	// Message privé vers un utilisateur
-	// 	Client* target_client = findClientByNick(target);
-	// 	if (target_client) {
-	// 		std::string privmsg = ":" + client->getPrefix() + " PRIVMSG " + target + " :" + message + "\r\n";
-	// 		send(target_client->getFd(), privmsg.c_str(), privmsg.length(), 0);
-	// 	} else {
-	// 		sendError(client, "401", target + " :No such nick/channel");
-	// 	}
-	// }
 }
 
 void Server::handlePart(Client* client, const std::vector<std::string>& tokens) {
@@ -592,10 +560,10 @@ void Server::sendMessageWhenJoin(Client* client){
 void Server::sendMessageInfoChannel(Client *client){
 	const std::set<int>& members = client->getChannel()->getmembers();
 	const int& fd_client = client->getFd();
-	const std::string& channel_name = client->getChannel()->getName() + "\n";
-	std::string msg = ":serveur 332 client " + channel_name + " : " + " TOPIC " + client->getChannel()->getTopic();
+	const std::string& channel_name = client->getChannel()->getName();
+	std::string msg = ":serveur 332 client " + channel_name + " : " + "TOPIC " + client->getChannel()->getTopic() + "\n";
 	send(fd_client, msg.c_str(), msg.length(), 0);
-	msg = ":serveur 353 client = " + channel_name + " : ";
+	msg = ":serveur 353 client = " + channel_name + " :";
 	for (std::set<int>::iterator i = members.begin(); i != members.end(); ++i){
 		Client * cl_channel = findClientByFd(*i);
 		if (cl_channel){
@@ -653,8 +621,8 @@ void Server::Handle_mode(Client* client, const std::vector<std::string>& args) {
     }
     const std::string& target = args[0];
     if (target[0] == '#') {
-        std::map<std::string, Channel*>::iterator it = channels->find(target);
-        if (it == channels->end()) {
+        std::map<std::string, Channel*>::iterator it = channels.find(target);
+        if (it == channels.end()) {
             sendToClient(*client, "403 " + target + " :No such channel");
             return;
         }
@@ -730,8 +698,8 @@ void Server::Handle_topic(Client* client, const std::vector<std::string>& tokens
         return;
     }
     std::string channel_name = tokens[1];
-    std::map<std::string, Channel*>::iterator it = channels->find(channel_name);
-    if (it == channels->end()) {
+    std::map<std::string, Channel*>::iterator it = channels.find(channel_name);
+    if (it == channels.end()) {
         sendError(client, "403", channel_name + " :No such channel");
         return;
     }

@@ -39,6 +39,7 @@ SRC = ./src/main.cpp	\
 	./src/class/Channel.cpp \
 	./src/parsing/IRCMessage.cpp \
     ./src/parsing/CommandParser.cpp \
+	./src/class/Server_command.cpp	\
 
 OBJ_DIR       = ./obj/
 OBJ           = $(patsubst %.cpp, $(OBJ_DIR)%.o, $(SRC))
