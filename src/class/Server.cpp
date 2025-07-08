@@ -186,6 +186,10 @@ bool Server::processCommand(Client* client, const std::string& command) {
 			handlePrivmsg(client, tokens);
 		} else if (cmd == "PART") {
 			handlePart(client, tokens);
+		} else if (cmd == "TOPIC") {
+			Handle_topic(client, tokens);
+		} else if (cmd == "MODE") {
+			Handle_mode(client, tokens);
 		} else {
 			sendError(client, "421", cmd + " :Unknown command");
 		}
