@@ -143,7 +143,7 @@ void Server::handleClientData(int client_fd) {
 	// Trouver le client
 	Client* client = findClientByFd(client_fd);
 	if (!client) {
-		std::cout << "Client non trouvé pour fd " << client_fd << std::endl;
+		std::cout << "Client non trouvé pour fd " << client_fd << ". Données ignorées." << std::endl;
 		return;
 	}
 	
@@ -157,7 +157,12 @@ void Server::handleClientData(int client_fd) {
 		
 		// Traiter la commande et vérifier si on doit continuer
 		if (!processCommand(client, command)) {
-			// Client supprimé (QUIT), arrêter immédiatement
+			return;
+		}
+		// Après un processCommand, le client peut avoir été supprimé (ex: QUIT)
+		client = findClientByFd(client_fd);
+		if (!client) {
+			std::cout << "Client supprimé après processCommand, arrêt du traitement." << std::endl;
 			return;
 		}
 	}
@@ -272,16 +277,25 @@ void Server::Handle_Nick(Client *user, const std::vector<std::string> &tokens)
 
 
 void Server::handleUser(Client* client, const std::vector<std::string>& tokens) {
+
 	if (tokens.size() < 5) {
 		sendError(client, "461", "USER :Not enough parameters");
 		return;
 	}
-	
-	client->setUsername(tokens[1]);
-	client->setRealname(tokens[4]);
-	
-	std::cout << "Client " << client->getFd() << " user: " << tokens[1] << std::endl;
-	
+	// USER <username> <hostname> <servername> :<realname>
+	std::string username = tokens[1];
+	// Vérification realname commençant par : et gestion space
+	if (tokens[4][0] != ':') {
+		sendError(client, "461", "USER :Not enough parameters (realname must start with ':')");
+		return;
+	}
+	std::string realname = tokens[4].substr(1);
+	for (size_t i = 5; i < tokens.size(); ++i) {
+		realname += " " + tokens[i];
+	}
+	client->setUsername(username);
+	client->setRealname(realname);
+	std::cout << "Client " << client->getFd() << " user: " << username << ", realname: " << realname << std::endl;
 	if (client->isFullyRegistered()) {
 		sendWelcomeMessages(client);
 	}
