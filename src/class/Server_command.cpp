@@ -70,12 +70,12 @@ void	Server::handleKick(Client* client, const std::vector<std::string>& tokens)
 			reason += " " + tokens[i];
 		}
 	}
-	channel->unsetMembers(kickedClient->getFd());
 	std::string kickMsg = ":" + client->getNickname() + " KICK " + channel_name + " " + kickedNick + " :" + reason + "\r\n";
 	const std::set<int> members = channel->getmembers();
-
+	
     for (std::set<int>::iterator i = members.begin(); i != members.end(); i++) {
-        send(*i, kickMsg.c_str(), kickMsg.length(), 0);
+		send(*i, kickMsg.c_str(), kickMsg.length(), 0);
+		channel->unsetMembers(kickedClient->getFd());
     }
     
     kickedClient->setChannel(NULL);
