@@ -9,7 +9,7 @@
 #include "../../includes/Clients.hpp"
 #include "../../includes/Channel.hpp"
 
-// Envoi un message formaté à un client
+// Envoi un message à un client
 void sendToClient(Client& client, const std::string& message) {
     std::string formattedMessage = message + "\r\n";
     send(client.getFd(), formattedMessage.c_str(), formattedMessage.length(), 0);
@@ -24,19 +24,19 @@ void broadcastToChannel(Channel& channel, const std::string& message) {
     }
 }
 
-// Utilitaire pour upper-case une string
+// upper-case une string
 std::string toUpper(const std::string& str) {
     std::string result = str;
     std::transform(result.begin(), result.end(), result.begin(), ::toupper);
     return result;
 }
 
-// Utilitaire pour obtenir le prefix IRC d'un client
+// obtenir le prefix IRC d'un client
 std::string getClientPrefix(const Client& client) {
     return client.getNickname() + "!" + client.getUsername() + "@localhost";
 }
 
-// Utilitaire pour convertir int en string (C++98)
+// Utilitaire pour convertir int en string
 std::string intToString(int value) {
     std::ostringstream oss;
     oss << value;

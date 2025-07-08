@@ -53,7 +53,6 @@ class Server {
 		void handlePrivmsg(Client* client, const std::vector<std::string>& tokens);
 		void handlePart(Client* client, const std::vector<std::string>& tokens);
 		void handleKick(Client* client, const std::vector<std::string>& tokens);
-		// Ajout : handlers pour MODE et TOPIC
 		void Handle_mode(Client* client, const std::vector<std::string>& args);
 		void Handle_topic(Client* client, const std::vector<std::string>& tokens);
 		

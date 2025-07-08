@@ -195,6 +195,8 @@ bool Server::processCommand(Client* client, const std::string& command) {
 			handlePart(client, tokens);
 		} else if (cmd == "TOPIC") {
 			Handle_topic(client, tokens);
+		} else if (cmd == "MODE") {
+			Handle_mode(client, tokens);
 		} else {
 			sendError(client, "421", cmd + " :Unknown command");
 		}
@@ -608,12 +610,6 @@ const char *Server::ServerErrorException::what() const throw(){
 	return msg.c_str();
 }
 
-// void Server::sendToClient(Client& client, const std::string& message) {
-//     client.send(message + "\r\n");
-// }
-
-// Correction de la fonction MODE (C++98, méthodes Channel existantes, utils externes)
-// Doit être déclarée dans Server.hpp : void Handle_mode(Client* client, const std::vector<std::string>& args);
 void Server::Handle_mode(Client* client, const std::vector<std::string>& args) {
     if (args.size() < 2) {
         sendToClient(*client, "461 MODE :Not enough parameters");
@@ -690,8 +686,6 @@ void Server::Handle_mode(Client* client, const std::vector<std::string>& args) {
     }
 }
 
-// Correction de la fonction TOPIC (C++98, méthodes Channel existantes, utils externes)
-// Doit être déclarée dans Server.hpp : void Handle_topic(Client* client, const std::vector<std::string>& tokens);
 void Server::Handle_topic(Client* client, const std::vector<std::string>& tokens) {
     if (tokens.size() < 2) {
         sendError(client, "461", "TOPIC :Not enough parameters");
