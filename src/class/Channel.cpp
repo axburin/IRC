@@ -65,7 +65,13 @@ void Channel::setMembers(int fd){
 void Channel::setOps(int fd){
 	std::set<int>::iterator it = ops.find(fd);
 	if (it == ops.end())
-		members.insert(fd);
+		ops.insert(fd);
+}
+
+void Channel::setInvited(int fd){
+	std::set<int>::iterator it = invited.find(fd);
+	if (it == invited.end())
+		invited.insert(fd);
 }
 
 void Channel::setLimitMember(int nb){
@@ -102,8 +108,17 @@ void Channel::unsetOps(int fd){
 	if (it == ops.end())
 		return ;
 	else
-		members.erase(it);
+		ops.erase(it);
 }
+
+void Channel::unsetInvitedUser(int fd){
+	std::set<int>::iterator it = invited.find(fd);
+	if (it == invited.end())
+		return ;
+	else
+		invited.erase(it);
+}
+
 
 bool	Channel::findClientInChannel(int client_fd)
 {

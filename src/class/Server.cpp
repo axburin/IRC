@@ -174,6 +174,8 @@ bool Server::processCommand(Client* client, const std::string& command) {
 	
 	if (cmd == "PASS") {
 		handlePass(client, tokens);
+	} else if (cmd == "INVITE") {
+		handleInvite(client, tokens);
 	} else if (cmd == "KICK") {
 		handleKick(client, tokens);
 	} else if (cmd == "NICK") {
