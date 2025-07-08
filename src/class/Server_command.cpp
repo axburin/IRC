@@ -148,4 +148,6 @@ void	Server::handleInvite(Client* client, const std::vector<std::string>& tokens
 
 	std::string inviteMsg = ":" + client->getNickname() + "!" + client->getUsername() + " INVITE " + nick + " " + channel_name + "\r\n";
 	send(invitedClient->getFd(), inviteMsg.c_str(), inviteMsg.length(), 0);
+	invitedClient->setInvite(channel->getName());
+	channel->setInvited(invitedClient->getFd());
 }
