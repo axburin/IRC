@@ -622,27 +622,43 @@ void Server::Handle_mode(Client* client, const std::vector<std::string>& args) {
         sendToClient(*client, "461 MODE :Not enough parameters");
         return;
     }
+    
     const std::string& target = args[1];
+    
     if (target[0] == '#') {
         std::map<std::string, Channel*>::iterator it = channels.find(target);
         if (it == channels.end()) {
             sendToClient(*client, "403 " + target + " :No such channel");
             return;
         }
+        
         Channel& channel = *(it->second);
+        
+        // ✅ Si pas de flags fournis, retourner les modes actuels du channel
+        if (args.size() < 3) {
+            // Retourner les modes actuels (optionnel selon l'implémentation IRC)
+            sendToClient(*client, "324 " + target + " +nt");  // exemple
+            return;
+        }
+        
         if (!channel.clientOp(client->getFd())) {
             sendToClient(*client, "482 " + target + " :You're not channel operator");
             return;
         }
+        
+        // Maintenant on sait que args[2] existe
         bool adding = true;
         for (size_t i = 0; i < args[2].size(); ++i) {
             char flag = args[2][i];
             switch (flag) {
                 case '+': adding = true; break;
                 case '-': adding = false; break;
-                case 'i': channel.setIsInvitOnly(adding); break;
+                case 'i': channel.setIsInvitOnly(adding); break; 
+				case 't': 
+                    channel.setIsRestrictedTopic(adding);  // ✅ NOUVEAU: Mode topic
+                    break;
                 case 'k':
-                    if (args.size() < 3) {
+                    if (args.size() < 4) {  // ✅ Vérifier args[3]
                         sendToClient(*client, "461 MODE :Missing key parameter");
                         return;
                     }
@@ -654,7 +670,7 @@ void Server::Handle_mode(Client* client, const std::vector<std::string>& args) {
                     }
                     break;
                 case 'l':
-                    if (adding && args.size() >= 3) {
+                    if (adding && args.size() >= 4) {  // ✅ Vérifier args[3]
                         std::istringstream iss(args[3]);
                         int lim;
                         if (!(iss >> lim)) {
@@ -667,7 +683,7 @@ void Server::Handle_mode(Client* client, const std::vector<std::string>& args) {
                     }
                     break;
                 case 'o':
-                    if (args.size() < 3) {
+                    if (args.size() < 4) {  // ✅ Vérifier args[3]
                         sendToClient(*client, "461 MODE :Missing operator parameter");
                         return;
                     }
