@@ -252,6 +252,7 @@ void Server::Handle_Nick(Client *user, const std::vector<std::string> &tokens)
 				clients.erase(it);
 				clients[Pseudo] = ptrClient;
 				user->setNickname(Pseudo);
+				break;
 			}
 		}
 		
