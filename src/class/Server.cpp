@@ -272,13 +272,13 @@ void Server::Handle_Nick(Client *user, const std::vector<std::string> &tokens)
 
 
 void Server::handleUser(Client* client, const std::vector<std::string>& tokens) {
-	if (tokens.size() < 5) {
+	if (tokens.size() < 3) {
 		sendError(client, "461", "USER :Not enough parameters");
 		return;
 	}
 	
 	client->setUsername(tokens[1]);
-	client->setRealname(tokens[4]);
+	client->setRealname(tokens[2]);
 	
 	std::cout << "Client " << client->getFd() << " user: " << tokens[1] << std::endl;
 	
