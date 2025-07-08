@@ -1,7 +1,8 @@
-# include "Server.hpp"
-# include "Channel.hpp"
-# include "Clients.hpp"
-# include "error.hpp"
+#include "Server.hpp"
+#include "Channel.hpp"
+#include "Clients.hpp"
+#include "error.hpp"
+
 
 // Fonction utilitaire pour convertir int en string (C++98)
 std::string intToString(int value) {
@@ -602,58 +603,135 @@ const char *Server::ServerErrorException::what() const throw(){
 // }
 
 void Server::Handle_mode(Client& client, const std::vector<std::string>& args) {
-	if(args.size() < 2)
-	{
-		sendToClient(client, "461 MODE :NOT enough parameters");
+    if (args.size() < 2) {
+        sendToClient(client, "461 MODE :Not enough parameters");
+        return;
+    }
+
+    const std::string& target = args[0];
+
+    if (target[0] == '#') {
+        const std::string& modeFlags = args[1];
+
+        // Ensure the channel exists
+        auto it = channels->find(target);
+        if (it == channels->end()) {
+            sendToClient(client, "403 " + target + " :No such channel");
+            return;
+        }
+
+        Channel& channel = *(it->second);
+        if (!channel.userIsop(client)) {
+            sendToClient(client, "482 " + target + " :You're not channel operator");
+            return;
+        }
+
+        bool adding = true;
+        for (char flag : modeFlags) {
+            switch (flag) {
+                case '+':
+                    adding = true;
+                    break;
+                case '-':
+                    adding = false;
+                    break;
+                case 'i':
+                    channel.setInviteOnly(adding);
+                    break;
+                case 'k':
+                    if (args.size() < 3) {
+                        sendToClient(client, "461 MODE :Missing key parameter");
+                        return;
+                    }
+                    channel.setKey(adding ? args[2] : "");
+                    break;
+                case 'l':
+                    if (adding && args.size() >= 3) {
+                        try {
+                            channel.setLimit(std::stoi(args[2]));
+                        } catch (const std::exception&) {
+                            sendToClient(client, "461 MODE :Invalid limit parameter");
+                            return;
+                        }
+                    } else {
+                        channel.clearLimit();
+                    }
+                    break;
+                case 'o':
+                    if (args.size() < 3) {
+                        sendToClient(client, "461 MODE :Missing operator parameter");
+                        return;
+                    }
+                    channel.setOp(args[2], adding);
+                    break;
+                default:
+                    sendToClient(client, "472 " + std::string(1, flag) + " :is unknown mode");
+            }
+        }
+
+        // Notify other members in the channel
+        broadcastToChannel(channel, ":" + client.prefix() + " MODE " + target + " " + modeFlags);
+    } else {
+        sendToClient(client, "403 " + target + " :No such channel");
+    }
+}
+
+// Utility function to send a message to a specific client
+void Server::sendToClient(Client& client, const std::string& message) {
+    std::string formattedMessage = message + "\r\n";
+    send(client.getFd(), formattedMessage.c_str(), formattedMessage.length(), 0);
+}
+
+// Utility function to broadcast a message to all members of a channel
+void Server::broadcastToChannel(Channel& channel, const std::string& message) {
+    const std::set<int>& members = channel.getmembers();
+    for (int fd : members) {
+        send(fd, (message + "\r\n").c_str(), message.length() + 2, 0);
+    }
+}
+
+void Server::Handle_topic(Client* client, const std::vector<std::string>& tokens)
+{
+	if (tokens.size() < 2) {
+		sendError(client, "461", "TOPIC :Not enough parameters");
 		return;
 	}
 
-	const std::string& target = args[0];
+	std::string channel_name = tokens[1];
 
-	if(target[0] == '#')
-	{
-		const std::string& modeFlags = args[1];
-
-		Channel& channel = channels[target];
-		if(!channel.userIsop(client))
-		{
-			sendToClient(client, "482 " + target + " :You're not channel operator");
-			return;
-		}
-		bool adding = true;
-		for(char flag : modeflags)
-		{
-			switch (flag) 
-			{
-				case '+':
-					adding = true;
-					break;
-				case '-':
-					adding = false;
-					break;
-				case 'i':
-					channel.setInviteOnly(adding);
-					break;
-                		case 'k':
-					if (args.size() < 3)
-						return; // missing key
-					channel.setKey(adding ? args[2] : "");
-					break;
-				case 'l':
-					if (adding && args.size() >= 3)
-						channel.setLimit(std::stoi(args[2]));
-					else
-						channel.clearLimit();
-					break;
-				case 'o':
-					if (args.size() < 3) return;
-					channel.setOp(args[2], adding);
-					break;
-				default:
-					sendToClient(client, "472 " + std::string(1, flag) + " :is unknown mode");
-			}
-		}
-		// Notifier les autres
-		broadcastToChannel(channel, ":" + client.prefix() + " MODE " + target + " " + modeFlags);
+	std::map<std::string, Channel*>::iterator it = channels->find(channel_name);
+	if (it == channels->end()) {
+		sendError(client, "403", channel_name + " :No such channel");
+		return;
 	}
+
+	Channel* channel = it->second;
+
+	// If no topic display current
+	if (tokens.size() == 2) {
+		if (channel->getTopic().empty()) {
+			sendReply(client, "331", channel_name + " :No topic is set");
+		} else {
+			sendReply(client, "332", channel_name + " :" + channel->getTopic());
+		}
+		return;
+	}
+
+	// Check  allowed to change 
+	if (channel->isTopicProtected() && !channel->userIsop(client)) {
+		sendError(client, "482", channel_name + " :You're not channel operator");
+		return;
+	}
+
+	// Set
+	std::string new_topic = tokens[2];
+	for (size_t i = 3; i < tokens.size(); ++i) {
+		new_topic += " " + tokens[i];
+	}
+
+	channel->setTopic(new_topic);
+
+	// Notify all members of the channel about the topic change
+	std::string topic_msg = ":" + client->getPrefix() + " TOPIC " + channel_name + " :" + new_topic;
+	broadcastToChannel(*channel, topic_msg);
 }
