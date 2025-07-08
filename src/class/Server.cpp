@@ -193,10 +193,10 @@ bool Server::processCommand(Client* client, const std::string& command) {
 			handlePrivmsg(client, tokens);
 		} else if (cmd == "PART") {
 			handlePart(client, tokens);
-		} else if (cmd == "TOPIC") {
-			Handle_topic(client, tokens);
 		} else if (cmd == "MODE") {
 			Handle_mode(client, tokens);
+		} else if (cmd == "TOPIC") {
+			Handle_topic(client, tokens);
 		} else {
 			sendError(client, "421", cmd + " :Unknown command");
 		}
@@ -610,12 +610,18 @@ const char *Server::ServerErrorException::what() const throw(){
 	return msg.c_str();
 }
 
+// void Server::sendToClient(Client& client, const std::string& message) {
+//     client.send(message + "\r\n");
+// }
+
+// Correction de la fonction MODE (C++98, méthodes Channel existantes, utils externes)
+// Doit être déclarée dans Server.hpp : void Handle_mode(Client* client, const std::vector<std::string>& args);
 void Server::Handle_mode(Client* client, const std::vector<std::string>& args) {
     if (args.size() < 2) {
         sendToClient(*client, "461 MODE :Not enough parameters");
         return;
     }
-    const std::string& target = args[0];
+    const std::string& target = args[1];
     if (target[0] == '#') {
         std::map<std::string, Channel*>::iterator it = channels.find(target);
         if (it == channels.end()) {
@@ -628,8 +634,8 @@ void Server::Handle_mode(Client* client, const std::vector<std::string>& args) {
             return;
         }
         bool adding = true;
-        for (size_t i = 0; i < args[1].size(); ++i) {
-            char flag = args[1][i];
+        for (size_t i = 0; i < args[2].size(); ++i) {
+            char flag = args[2][i];
             switch (flag) {
                 case '+': adding = true; break;
                 case '-': adding = false; break;
@@ -640,7 +646,7 @@ void Server::Handle_mode(Client* client, const std::vector<std::string>& args) {
                         return;
                     }
                     if (adding)
-                        channel.setPassword(const_cast<std::string&>(args[2]));
+                        channel.setPassword(const_cast<std::string&>(args[3]));
                     else {
                         std::string empty = "";
                         channel.setPassword(empty);
@@ -648,7 +654,7 @@ void Server::Handle_mode(Client* client, const std::vector<std::string>& args) {
                     break;
                 case 'l':
                     if (adding && args.size() >= 3) {
-                        std::istringstream iss(args[2]);
+                        std::istringstream iss(args[3]);
                         int lim;
                         if (!(iss >> lim)) {
                             sendToClient(*client, "461 MODE :Invalid limit parameter");
@@ -665,9 +671,9 @@ void Server::Handle_mode(Client* client, const std::vector<std::string>& args) {
                         return;
                     }
                     {
-                        Client* opClient = findClientByNick(args[2]);
+                        Client* opClient = findClientByNick(args[3]);
                         if (!opClient) {
-                            sendToClient(*client, "401 " + args[2] + " :No such nick");
+                            sendToClient(*client, "401 " + args[3] + " :No such nick");
                             return;
                         }
                         if (adding)
@@ -680,12 +686,14 @@ void Server::Handle_mode(Client* client, const std::vector<std::string>& args) {
                     sendToClient(*client, "472 " + std::string(1, flag) + " :is unknown mode");
             }
         }
-        broadcastToChannel(channel, ":" + getClientPrefix(*client) + " MODE " + target + " " + args[1]);
+        broadcastToChannel(channel, ":" + getClientPrefix(*client) + " MODE " + target + " " + args[2]);
     } else {
         sendToClient(*client, "403 " + target + " :No such channel");
     }
 }
 
+// Correction de la fonction TOPIC (C++98, méthodes Channel existantes, utils externes)
+// Doit être déclarée dans Server.hpp : void Handle_topic(Client* client, const std::vector<std::string>& tokens);
 void Server::Handle_topic(Client* client, const std::vector<std::string>& tokens) {
     if (tokens.size() < 2) {
         sendError(client, "461", "TOPIC :Not enough parameters");
