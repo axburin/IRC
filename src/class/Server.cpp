@@ -508,6 +508,7 @@ void Server::disconnectClient(int client_fd) {
 	for (std::map<std::string, Client*>::iterator it = clients.begin(); 
 		 it != clients.end(); ++it) {
 		if (it->second->getFd() == client_fd) {
+			removeCLientOnInvite(it->second);
 			delete it->second;
 			clients.erase(it);
 			break;
@@ -738,4 +739,16 @@ void Server::Handle_topic(Client* client, const std::vector<std::string>& tokens
     channel->setTopic(new_topic);
     std::string topic_msg = ":" + client->getPrefix() + " TOPIC " + channel_name + " :" + new_topic;
     broadcastToChannel(*channel, topic_msg);
+}
+
+void Server::removeCLientOnInvite(Client *client){
+	int client_fd = client->getFd();
+
+	for (std::map<std::string, std::set<int> >::iterator it = channel_invite.begin(); it != channel_invite.end(); it++){
+		std::set<int>::iterator it_fd = it->second.find(client_fd);
+		if (it_fd != it->second.end()) {
+			it->second.erase(it_fd);
+		}
+	}
+	
 }

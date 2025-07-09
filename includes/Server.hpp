@@ -71,6 +71,7 @@ class Server {
 		void changeClientChannel(Client* client, Channel* channel);
 		void sendMessageWhenJoin(Client *client);
 		void sendMessageInfoChannel(Client* client);
+		void removeCLientOnInvite(Client* client);
 		void stop();
 		// void sendToClient(Client& client, const std::string& message);
 		// void Handle_mode(Client& client, const std::vector<std::string>& args);
