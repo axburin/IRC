@@ -248,7 +248,7 @@ void Server::Handle_Nick(Client *user, const std::vector<std::string> &tokens)
 
 
 void Server::handleUser(Client* client, const std::vector<std::string>& tokens) {
-	if (tokens.size() < 3) {
+	if (tokens.size() != 3) {
 		sendError(client, "461", "USER :Not enough parameters");
 		return;
 	}
@@ -469,7 +469,6 @@ void Server::disconnectClient(int client_fd) {
 	
 	// Fermer le socket
 	close(client_fd);
-	
 	// Retirer de la liste des fds
 	for (std::vector<int>::iterator it = fds.begin(); it != fds.end(); ++it) {
 		if (*it == client_fd) {
@@ -481,6 +480,11 @@ void Server::disconnectClient(int client_fd) {
 	// Retirer de la map des clients
 	for (std::map<std::string, Client*>::iterator it = clients.begin(); 
 		 it != clients.end(); ++it) {
+			Channel *current_cl_chan = it->second->getChannel();
+			if (current_cl_chan){
+				current_cl_chan->unsetMembers(client_fd);
+				current_cl_chan->unsetOps(client_fd);
+			}
 		if (it->second->getFd() == client_fd) {
 			removeCLientOnInvite(it->second);
 			delete it->second;
