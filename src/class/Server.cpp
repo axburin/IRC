@@ -562,9 +562,9 @@ void Server::sendClientPrivmsg(Client *sender, Client* receiver, std::string msg
 void Server::sendChannelPrivmsg(Client *sender, Channel* chan_receiver, std::string msg){
 	std::string formt_msg;
 	if (msg[0] == ':')
-		formt_msg = ":" + sender->getNickname() + " PRIVMSG" + chan_receiver->getName() + " " + msg + "\n";
+		formt_msg = ":" + sender->getNickname() + " PRIVMSG " + chan_receiver->getName() + " " + msg + "\n";
 	else
-		formt_msg = ":" + sender->getNickname() + " PRIVMSG" + chan_receiver->getName() + " " + msg + "\n";
+		formt_msg = ":" + sender->getNickname() + " PRIVMSG " + chan_receiver->getName() + " " + msg + "\n";
 	const std::set<int> members = chan_receiver->getmembers();
 	for (std::set<int>::iterator i = members.begin(); i != members.end(); i++){
 		if (sender->getFd() != *i){

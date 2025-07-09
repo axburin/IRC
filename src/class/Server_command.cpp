@@ -60,12 +60,19 @@ void	Server::KICK(Client* client, Channel* channel, const std::vector<std::strin
 		
 		for (std::set<int>::iterator i = members.begin(); i != members.end(); i++) {
 			send(*i, kickMsg.c_str(), kickMsg.length(), 0);
-			channel->unsetMembers(kickedClient->getFd());
 		}
-		
+		channel->unsetMembers(kickedClient->getFd());
 		kickedClient->setChannel(NULL);
 		if (channel->clientOp(kickedClient->getFd())) {
 			channel->unsetOps(kickedClient->getFd());
+		}
+		if (channel->getmembers().size() == 0){
+			std::map<std::string, Channel*>::iterator it = channels.find(channel->getName());
+			if (it != channels.end()){
+				channel_invite.erase(channel->getName());
+				delete it->second;
+				channels.erase(it);
+			}
 		}
 	}
 }
