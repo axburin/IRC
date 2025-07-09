@@ -97,18 +97,19 @@ void	Server::handleKick(Client* client, const std::vector<std::string>& tokens)
 void	Server::handleInvite(Client* client, const std::vector<std::string>& tokens)
 {
 	if (tokens.size() < 3) {
-		sendError(client, "461", "INVITE :Not enough parameter");
+		sendError(client, "461", "INVITE :Need more params");
 		return;
 	}
+
 	std::string nick = tokens[1];
-	if (nick.empty()) {
-		sendError(client, "431", ":No nickname given");
-		return;
-	}
+	// if (nick.empty()) {
+	// 	sendError(client, "431", ":No nickname given");
+	// 	return;
+	// }
 	
 	Client* invitedClient = findClientByNick(nick);
 	if (!invitedClient) {
-		sendError(client, "401", nick + " :does not exist");
+		sendError(client, "401", nick + " :No such nick");
 		return;
 	}
 
@@ -117,37 +118,44 @@ void	Server::handleInvite(Client* client, const std::vector<std::string>& tokens
 		sendError(client, "403", channel_name + " :No such channel"); 
 		return;
 	}
-
+	
 	Channel* channel = findChannelByName(channel_name);
 	if (!channel) {
 		sendError(client, "403", channel_name + " :No such channel");
 		return;
 	}
-
-	if (client->getChannel()->getName() != channel->getName()) {
-		sendError(client, "442", channel_name + " :You're not on that channel");
-		return;
-	}
-
-	if (!channel->findClientInChannel(client->getFd())) {
-		sendError(client, "442", channel_name + " :You're not on that channel");
-		return;
-	}
-
-	if (channel->findClientInChannel(invitedClient->getFd())) {
-		sendError(client, "443", nick + " " + channel_name + " :is already on channel");
-		return;
-	}
-
-	if (channel->getIsInvitOnly() && !channel->clientOp(client->getFd())) {
+	
+	if (!channel->clientOp(client->getFd())) {
 		sendError(client, "482", channel_name + " :You're not channel operator");
 		return;
 	}
+
+	if (client->getChannel()->getName() != channel->getName()) {
+		sendError(client, "442", channel_name + " :Not on that channel");
+		return;
+	}
+
+	// if (!channel->findClientInChannel(client->getFd())) {
+	// 	sendError(client, "442", channel_name + " :You're not on that channel");
+	// 	return;
+	// }
+
+	if (channel->findClientInChannel(invitedClient->getFd())) {
+		sendError(client, "443", nick + " " + channel_name + " :User on channel");
+		return;
+	}
+
 
 	sendReply(client, "341", nick + " " + channel_name);
 
 	std::string inviteMsg = ":" + client->getNickname() + "!" + client->getUsername() + " INVITE " + nick + " " + channel_name + "\r\n";
 	send(invitedClient->getFd(), inviteMsg.c_str(), inviteMsg.length(), 0);
-	invitedClient->setInvite(channel->getName());
-	channel->setInvited(invitedClient->getFd());
+	if (channel->getIsInvitOnly()){
+		std::map<std::string, std::set<int> >::iterator it = channel_invite.find(channel->getName());
+		if (it == channel_invite.end()){
+			channel_invite[channel->getName()].insert(invitedClient->getFd());
+		} else {
+			it->second.insert(invitedClient->getFd());
+		}
+	}
 }

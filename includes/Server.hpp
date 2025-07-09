@@ -25,6 +25,7 @@ class Server {
 	private :
 		std::map<std::string, Client*> clients;
 		std::map<std::string, Channel*> channels;
+		std::map<std::string, std::set<int> > channel_invite;
 		int epoll_fd;
 		int server_fd;
 		std::vector<int> fds;
@@ -70,6 +71,7 @@ class Server {
 		void changeClientChannel(Client* client, Channel* channel);
 		void sendMessageWhenJoin(Client *client);
 		void sendMessageInfoChannel(Client* client);
+		void removeCLientOnInvite(Client* client);
 		void stop();
 		// void sendToClient(Client& client, const std::string& message);
 		// void Handle_mode(Client& client, const std::vector<std::string>& args);

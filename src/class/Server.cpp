@@ -319,21 +319,27 @@ void Server::handleJoin(Client* client, const std::vector<std::string>& tokens) 
 		if (tokens.size() < 3){
 			Channel* new_chan = new Channel(channel_name, client->getFd(), "");
 			channels.insert(std::pair<std::string, Channel*>(channel_name, new_chan));
+			channel_invite[channel_name] = std::set<int>();
 			changeClientChannel(client, new_chan);
 			sendMessageWhenJoin(client);
 			sendMessageInfoChannel(client);
 		} else {
 			Channel* new_chan = new Channel(channel_name, client->getFd(), tokens[2]);
 			channels.insert(std::pair<std::string, Channel*>(channel_name, new_chan));
+			channel_invite[channel_name] = std::set<int>();
 			changeClientChannel(client, new_chan);
 			sendMessageWhenJoin(client);
 			sendMessageInfoChannel(client);
 		}
 	} else {
 		Channel *join_channel = it->second;
+		std::map<std::string, std::set<int> >::iterator chan_it = channel_invite.find(join_channel->getName());
+		std::set<int>::iterator chan_inv_it = chan_it->second.find(client->getFd());
 		if (join_channel->getIsInvitOnly()){
-			sendError(client, "473", channel_name + " :Invite only channel");
-			return ;
+			if (chan_inv_it == chan_it->second.end() && !join_channel->clientOp(client->getFd())){
+				sendError(client, "473", channel_name + " :Invite only channel");
+				return ;
+			}
 		}
 		int lim = join_channel->getLimitMember();
 		std::string pass = join_channel->getPassword();
@@ -343,6 +349,8 @@ void Server::handleJoin(Client* client, const std::vector<std::string>& tokens) 
 				changeClientChannel(client, it->second);
 				sendMessageWhenJoin(client);
 				sendMessageInfoChannel(client);
+				if (chan_inv_it != chan_it->second.end())
+					chan_it->second.erase(chan_inv_it);
 			} else {
 				sendError(client, "471", channel_name + " :Channel is full");
 			}
@@ -355,6 +363,8 @@ void Server::handleJoin(Client* client, const std::vector<std::string>& tokens) 
 						changeClientChannel(client, it->second);
 						sendMessageWhenJoin(client);
 						sendMessageInfoChannel(client);
+						if (chan_inv_it != chan_it->second.end())
+							chan_it->second.erase(chan_inv_it);
 					} else {
 						sendError(client, "475", channel_name + " :Bad channel key");
 					}
@@ -504,6 +514,7 @@ void Server::disconnectClient(int client_fd) {
 	for (std::map<std::string, Client*>::iterator it = clients.begin(); 
 		 it != clients.end(); ++it) {
 		if (it->second->getFd() == client_fd) {
+			removeCLientOnInvite(it->second);
 			delete it->second;
 			clients.erase(it);
 			break;
@@ -543,6 +554,7 @@ void Server::changeClientChannel(Client* client, Channel * channel){
 				client->setChannel(channel);
 				channel->setMembers(client->getFd());
 			} else {
+				channel_invite.erase(cur_client_chan->getName());
 				delete it->second;
 				channels.erase(it);
 				client->setChannel(channel);
@@ -749,4 +761,16 @@ void Server::Handle_topic(Client* client, const std::vector<std::string>& tokens
     channel->setTopic(new_topic);
     std::string topic_msg = ":" + client->getPrefix() + " TOPIC " + channel_name + " :" + new_topic;
     broadcastToChannel(*channel, topic_msg);
+}
+
+void Server::removeCLientOnInvite(Client *client){
+	int client_fd = client->getFd();
+
+	for (std::map<std::string, std::set<int> >::iterator it = channel_invite.begin(); it != channel_invite.end(); it++){
+		std::set<int>::iterator it_fd = it->second.find(client_fd);
+		if (it_fd != it->second.end()) {
+			it->second.erase(it_fd);
+		}
+	}
+	
 }
