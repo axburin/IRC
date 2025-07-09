@@ -25,11 +25,11 @@ void broadcastToChannel(Channel& channel, const std::string& message) {
 }
 
 // upper-case une string
-std::string toUpper(const std::string& str) {
-    std::string result = str;
-    std::transform(result.begin(), result.end(), result.begin(), ::toupper);
-    return result;
-}
+// std::string toUpper(const std::string& str) {
+//     std::string result = str;
+//     std::transform(result.begin(), result.end(), result.begin(), ::toupper);
+//     return result;
+// }
 
 // obtenir le prefix IRC d'un client
 std::string getClientPrefix(const Client& client) {
@@ -37,8 +37,8 @@ std::string getClientPrefix(const Client& client) {
 }
 
 // Utilitaire pour convertir int en string
-std::string intToString(int value) {
-    std::ostringstream oss;
-    oss << value;
-    return oss.str();
-}
+// std::string intToString(int value) {
+//     std::ostringstream oss;
+//     oss << value;
+//     return oss.str();
+// }
