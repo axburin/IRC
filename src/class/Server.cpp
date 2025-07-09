@@ -259,6 +259,7 @@ void Server::Handle_Nick(Client *user, const std::vector<std::string> &tokens)
 				clients.erase(it);
 				clients[Pseudo] = ptrClient;
 				user->setNickname(Pseudo);
+				break;
 			}
 		}
 		
@@ -279,25 +280,16 @@ void Server::Handle_Nick(Client *user, const std::vector<std::string> &tokens)
 
 
 void Server::handleUser(Client* client, const std::vector<std::string>& tokens) {
-
-	if (tokens.size() < 5) {
+	if (tokens.size() < 3) {
 		sendError(client, "461", "USER :Not enough parameters");
 		return;
 	}
-	// USER <username> <hostname> <servername> :<realname>
-	std::string username = tokens[1];
-	// Vérification realname commençant par : et gestion space
-	if (tokens[4][0] != ':') {
-		sendError(client, "461", "USER :Not enough parameters (realname must start with ':')");
-		return;
-	}
-	std::string realname = tokens[4].substr(1);
-	for (size_t i = 5; i < tokens.size(); ++i) {
-		realname += " " + tokens[i];
-	}
-	client->setUsername(username);
-	client->setRealname(realname);
-	std::cout << "Client " << client->getFd() << " user: " << username << ", realname: " << realname << std::endl;
+	
+	client->setUsername(tokens[1]);
+	client->setRealname(tokens[2]);
+	
+	std::cout << "Client " << client->getFd() << " user: " << tokens[1] << std::endl;
+	
 	if (client->isFullyRegistered()) {
 		sendWelcomeMessages(client);
 	}
@@ -637,27 +629,43 @@ void Server::Handle_mode(Client* client, const std::vector<std::string>& args) {
         sendToClient(*client, "461 MODE :Not enough parameters");
         return;
     }
+    
     const std::string& target = args[1];
+    
     if (target[0] == '#') {
         std::map<std::string, Channel*>::iterator it = channels.find(target);
         if (it == channels.end()) {
             sendToClient(*client, "403 " + target + " :No such channel");
             return;
         }
+        
         Channel& channel = *(it->second);
+        
+        // ✅ Si pas de flags fournis, retourner les modes actuels du channel
+        if (args.size() < 3) {
+            // Retourner les modes actuels (optionnel selon l'implémentation IRC)
+            sendToClient(*client, "324 " + target + " +nt");  // exemple
+            return;
+        }
+        
         if (!channel.clientOp(client->getFd())) {
             sendToClient(*client, "482 " + target + " :You're not channel operator");
             return;
         }
+        
+        // Maintenant on sait que args[2] existe
         bool adding = true;
         for (size_t i = 0; i < args[2].size(); ++i) {
             char flag = args[2][i];
             switch (flag) {
                 case '+': adding = true; break;
                 case '-': adding = false; break;
-                case 'i': channel.setIsInvitOnly(adding); break;
+                case 'i': channel.setIsInvitOnly(adding); break; 
+				case 't': 
+                    channel.setIsRestrictedTopic(adding);  // ✅ NOUVEAU: Mode topic
+                    break;
                 case 'k':
-                    if (args.size() < 3) {
+                    if (args.size() < 4) {  // ✅ Vérifier args[3]
                         sendToClient(*client, "461 MODE :Missing key parameter");
                         return;
                     }
@@ -669,7 +677,7 @@ void Server::Handle_mode(Client* client, const std::vector<std::string>& args) {
                     }
                     break;
                 case 'l':
-                    if (adding && args.size() >= 3) {
+                    if (adding && args.size() >= 4) {  // ✅ Vérifier args[3]
                         std::istringstream iss(args[3]);
                         int lim;
                         if (!(iss >> lim)) {
@@ -682,7 +690,7 @@ void Server::Handle_mode(Client* client, const std::vector<std::string>& args) {
                     }
                     break;
                 case 'o':
-                    if (args.size() < 3) {
+                    if (args.size() < 4) {  // ✅ Vérifier args[3]
                         sendToClient(*client, "461 MODE :Missing operator parameter");
                         return;
                     }

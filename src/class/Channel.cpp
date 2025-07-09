@@ -68,12 +68,6 @@ void Channel::setOps(int fd){
 		ops.insert(fd);
 }
 
-void Channel::setInvited(int fd){
-	std::set<int>::iterator it = invited.find(fd);
-	if (it == invited.end())
-		invited.insert(fd);
-}
-
 void Channel::setLimitMember(int nb){
 	// can't exceed 64;
 	limit_member = nb;
