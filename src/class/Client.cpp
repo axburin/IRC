@@ -44,7 +44,7 @@ bool Client::extractCommand(std::string& command) {
 void Client::setNickname(const std::string& nick) {
 	nickname = nick;
 	has_nick = !nick.empty();
-	checkRegistration();
+	// checkRegistration();
 }
 
 void Client::setUsername(const std::string& user) {
