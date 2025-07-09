@@ -25,24 +25,24 @@ void	Server::KICK(Client* client, Channel* channel, const std::vector<std::strin
 	while (std::getline(Nicks, kickedNick, ',')) {
 		if (kickedNick.empty()) {
 			sendError(client, "431", ":No nickname given");
-			return;
+			continue;
 		}
 		
 		Client* kickedClient = findClientByNick(kickedNick);
 		if (!kickedClient) {
 			sendError(client, "401", kickedNick + " :does not exist");
-			return;
+			continue;
 		}
 		
 		if (!channel->findClientInChannel(kickedClient->getFd())) {
 			sendError(client, "441", kickedNick + " " + channel->getName() + " :They aren't on that channel");
-			return;
+			continue;
 		}
 		
 		if (!channel->findClientInChannel(client->getFd()))
 		{
 			sendError(client, "442", channel->getName() + " :You're not on that channel");
-			return;
+			continue;
 		}
 		
 		std::string reason = "No reason given";
@@ -83,12 +83,12 @@ void	Server::handleKick(Client* client, const std::vector<std::string>& tokens)
 	while (std::getline(channels, channel_name, ',')) {
 		if (channel_name.empty() || (channel_name[0] != '#' && channel_name[0] != '&')) {
 			sendError(client, "403", channel_name + " :No such channel"); 
-			return;
+			continue;
 		}
 		Channel* channel = findChannelByName(channel_name);
 		if (!channel) {
 			sendError(client, "403", channel_name + " :No such channel");
-			return;
+			continue;
 		}
 		KICK(client, channel, tokens);
 	}
