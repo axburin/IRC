@@ -105,15 +105,6 @@ void Channel::unsetOps(int fd){
 		ops.erase(it);
 }
 
-void Channel::unsetInvitedUser(int fd){
-	std::set<int>::iterator it = invited.find(fd);
-	if (it == invited.end())
-		return ;
-	else
-		invited.erase(it);
-}
-
-
 bool	Channel::findClientInChannel(int client_fd)
 {
 	std::set<int>::iterator it = members.find(client_fd);

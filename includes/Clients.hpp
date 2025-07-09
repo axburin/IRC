@@ -44,18 +44,14 @@ class Client {
 		void setNickname(const std::string& nick);
 		void setUsername(const std::string& user);
 		void setRealname(const std::string& real);
-		void setPassword(bool correct) { has_password = correct; }
-		void setInvite(std::string channel_name);
-		
+		void setPassword(bool correct) { has_password = correct; }		
 		// Authentification
-		bool isInvited(std::string channel_name);
 		bool isFullyRegistered() const;
 		void checkRegistration();
 		
 		// Utilitaires
 		std::string getPrefix() const;
 
-		void unsetInvite(std::string channel_name);
 };
 
 #endif

@@ -74,25 +74,3 @@ std::string Client::getPrefix() const {
 void Client::setChannel(Channel* chan){
 	actual_channel = chan;
 }
-
-bool Client::isInvited(std::string channel_name) {
-	std::set<std::string>::iterator it = invite.find(channel_name);
-	if (it != invite.end())
-		return(true);
-	else
-		return(false);
-}
-
-void Client::setInvite(std::string channel_name) {
-	std::set<std::string>::iterator it = invite.find(channel_name);
-	if (it == invite.end())
-		invite.insert(channel_name);
-}
-
-void	Client::unsetInvite(std::string channel_name) {
-	std::set<std::string>::iterator it = invite.find(channel_name);
-	if (it == invite.end())
-		return ;
-	else
-		invite.erase(it);
-}

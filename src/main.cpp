@@ -33,7 +33,6 @@ int main(int argc, char *argv[]){
 			return (1);
 		}
 		std::string password(argv[2]);
-		std::cout << "all good" <<std::endl;
 		std::signal(SIGINT, handle_sigint);
 		try {
 			Server* ircServer = NULL;

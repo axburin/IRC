@@ -14,7 +14,6 @@ Server::Server(int port, std::string password ): password(password) {
 	if (server_fd < 0)
 		throw ServerErrorException("Socket error");
 	
-	// Réutilisation d'adresse
 	int opt = 1;
 	setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
 	
@@ -86,12 +85,10 @@ void Server::acceptNewClient() {
 		client_event.data.fd = client_fd;
 		epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client_fd, &client_event);
 		fds.push_back(client_fd);
-		
-		// Créer un client temporaire
 		std::string temp_key = "temp_" + intToString(client_fd);
 		clients.insert(std::make_pair(temp_key, new Client(client_fd)));
 		
-		std::cout << "Nouveau client connecte : fd = " << client_fd << std::endl;
+		std::cout << "New client : fd = " << client_fd << std::endl;
 	}
 }
 
@@ -100,37 +97,28 @@ void Server::handleClientData(int client_fd) {
 	int bytes_read = read(client_fd, buffer, sizeof(buffer) - 1);
 	
 	if (bytes_read <= 0) {
-		std::cout << "Client deconnecte: fd = " << client_fd << std::endl;
+		std::cout << "Client disconnected : fd = " << client_fd << std::endl;
 		disconnectClient(client_fd);
 		return;
 	}
-	
 	buffer[bytes_read] = '\0';
 	std::string data(buffer);
-	
-	// Trouver le client
 	Client* client = findClientByFd(client_fd);
 	if (!client) {
-		std::cout << "Client non trouvé pour fd " << client_fd << ". Données ignorées." << std::endl;
+		std::cout << "Client not found" << client_fd << ". Data ignored." << std::endl;
 		return;
 	}
-	
-	// Ajouter les données au buffer du client
 	client->addToBuffer(data);
-	
-	// Extraire et traiter tous les messages complets
 	std::string command;
 	while (client->extractCommand(command)) {
-		std::cout << "Commande reçue: " << command << std::endl;
+		std::cout << "Command receive: " << command << std::endl;
 		
-		// Traiter la commande et vérifier si on doit continuer
 		if (!processCommand(client, command)) {
 			return;
 		}
-		// Après un processCommand, le client peut avoir été supprimé (ex: QUIT)
 		client = findClientByFd(client_fd);
 		if (!client) {
-			std::cout << "Client supprimé après processCommand, arrêt du traitement." << std::endl;
+			std::cout << "Client deleted after process, end of program." << std::endl;
 			return;
 		}
 	}
@@ -140,7 +128,7 @@ bool Server::processCommand(Client* client, const std::string& command) {
 	std::vector<std::string> tokens = simpleParse(command);
 	
 	if (tokens.empty()) {
-		return true; // Continue
+		return true;
 	}
 	
 	std::string cmd = tokens[0];
@@ -157,11 +145,10 @@ bool Server::processCommand(Client* client, const std::string& command) {
 		handleUser(client, tokens);
 	} else if (cmd == "QUIT") {
 		handleQuit(client, tokens);
-		return false; // Arrêter le traitement (client supprimé)
+		return false;
 	} else if (!client->isFullyRegistered()) {
 		sendError(client, "451", ":You have not registered");
 	} else {
-		// Commandes nécessitant une authentification complète
 		if (cmd == "JOIN") {
 			handleJoin(client, tokens);
 		} else if (cmd == "PRIVMSG") {
@@ -176,7 +163,7 @@ bool Server::processCommand(Client* client, const std::string& command) {
 			sendError(client, "421", cmd + " :Unknown command");
 		}
 	}
-	return true; // Continue le traitement
+	return true;
 }
 
 void Server::handlePass(Client* client, const std::vector<std::string>& tokens) {
@@ -213,13 +200,6 @@ void Server::Handle_Nick(Client *user, const std::vector<std::string> &tokens)
 			sendError(user, "433", Pseudo + " :Nickname is already in use"); // ERR_NICKNAMEINUSE
 			return;
 		}
-
-		// std::string oldPseudo = user->getNickname();
-		// if (!oldPseudo.empty()) {
-		// 	std::map<std::string, Client*>::iterator it = this->clients.find(oldPseudo);
-		// 	if (it != this->clients.end())
-		// 		this->clients.erase(it);
-		// }
 		for (std::map<std::string, Client*>::iterator it = clients.begin(); it != clients.end(); it++)
 		{
 			if (it->second == user){
@@ -230,14 +210,7 @@ void Server::Handle_Nick(Client *user, const std::vector<std::string> &tokens)
 				break;
 			}
 		}
-		
-		// this->clients.insert(std::make_pair(Pseudo, user));
 		std::cout << "nombre de clients :" << clients.size() << std::endl;
-		// user->setNickname(Pseudo);
-
-		// if (user->isFullyRegistered()) {
-		// 	sendWelcome(user); 
-		// }
 	}
 	catch (const std::exception& e) {
 		std::cerr << "Erreur dans Handle_Nick : " << e.what() << std::endl;
@@ -252,7 +225,11 @@ void Server::handleUser(Client* client, const std::vector<std::string>& tokens) 
 		sendError(client, "461", "USER :Not enough parameters");
 		return;
 	}
-	
+	if (client->isFullyRegistered()) {
+            sendError(client, "462", ":You may not reregister");
+            return;
+        }
+
 	client->setUsername(tokens[1]);
 	client->setRealname(tokens[2]);
 	
@@ -313,7 +290,7 @@ void Server::handleJoin(Client* client, const std::vector<std::string>& tokens) 
 		std::string pass = join_channel->getPassword();
 		int nb_member = join_channel->getMembersSize();
 		if (!pass.size()){
-			if (lim == -1 || lim >= nb_member){
+			if (lim == -1 || lim > nb_member){
 				changeClientChannel(client, it->second);
 				sendMessageWhenJoin(client);
 				sendMessageInfoChannel(client);
@@ -357,11 +334,11 @@ void Server::handlePrivmsg(Client* client, const std::vector<std::string>& token
 	if (cible[0] == '#' || cible[0] == '&'){
 		std::map<std::string, Channel*>::iterator it = channels.find(cible);
 		if (it == channels.end()){
-			sendError(client, "403", ":No such channel\r\n");
+			sendError(client, "403", ":No such channel");
 			return ;
 		} else {
 			if (it->second != client->getChannel()){
-				sendError(client, "442", ":Not on the channel\r\n");
+				sendError(client, "442", ":Not on the channel");
 				return ;
 			}
 			sendChannelPrivmsg(client, it->second, tokens[2]);
@@ -369,11 +346,11 @@ void Server::handlePrivmsg(Client* client, const std::vector<std::string>& token
 	} else {
 		std::map<std::string, Client*>::iterator jt = clients.find(cible);
 		if (jt == clients.end()){
-			sendError(client, "401", ":No such nick\r\n");
+			sendError(client, "401", ":No such nick");
 			return ;
 		} else {
 			if (!jt->second->isAuthenticated()){
-				sendError(client, "451", ":NOt registered\r\n");
+				sendError(client, "451", ":NOt registered");
 				return ;
 			}
 			sendClientPrivmsg(client, jt->second, tokens[2]);
@@ -445,7 +422,7 @@ bool Server::isNickInUse(const std::string& nickname) {
 }
 
 void Server::sendError(Client* client, const std::string& code, const std::string& message) {
-	std::string response = ":ircserv " + code + " " + message + "\r\n";
+	std::string response = ":ircserv " + code + " " + client->getNickname() + " " + message + "\r\n";
 	send(client->getFd(), response.c_str(), response.length(), 0);
 }
 
@@ -555,20 +532,21 @@ void Server::sendMessageInfoChannel(Client *client){
 	const std::set<int>& members = client->getChannel()->getmembers();
 	const int& fd_client = client->getFd();
 	const std::string& channel_name = client->getChannel()->getName();
-	std::string msg = ":serveur 332 client " + channel_name + " : " + "TOPIC " + client->getChannel()->getTopic() + "\n";
+	std::string msg = ":ircserv 332 " + client->getNickname() + " " + channel_name + " : " + "TOPIC " + client->getChannel()->getTopic() + "\n";
 	send(fd_client, msg.c_str(), msg.length(), 0);
-	msg = ":serveur 353 client = " + channel_name + " :";
+	msg = ":ircserv 353 " + client->getNickname() + " = " + channel_name + " :";
 	for (std::set<int>::iterator i = members.begin(); i != members.end(); ++i){
 		Client * cl_channel = findClientByFd(*i);
 		if (cl_channel){
 			if (cl_channel->getFd() != fd_client){
-				msg += " " + cl_channel->getNickname();
+				std::string isOp = client->getChannel()->clientOp(*i) ? "@" : "";
+				msg += " " + isOp + cl_channel->getNickname();
 			}
 		}
 	}
 	msg += "\n";
 	send(fd_client, msg.c_str(), msg.length(), 0);
-	msg = ":serveur 366 client " + channel_name + " :End of /NAME list\n";
+	msg = ":ircserv 366 " + client->getNickname() + " " + channel_name + " :End of /NAME list\n";
 	send(fd_client, msg.c_str(), msg.length(), 0);
 }
 
