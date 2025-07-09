@@ -69,7 +69,8 @@ void Channel::setOps(int fd){
 }
 
 void Channel::setLimitMember(int nb){
-	// can't exceed 64;
+	if (nb == 0 || nb < -1 || nb > 64)
+		return ;
 	limit_member = nb;
 }
 

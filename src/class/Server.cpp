@@ -645,7 +645,10 @@ void Server::Handle_mode(Client* client, const std::vector<std::string>& args) {
                         if (!(iss >> lim)) {
                             sendToClient(*client, "461 MODE :Invalid limit parameter");
                             return;
-                        }
+                        } else if (lim > 64 || lim < 1) {
+							sendToClient(*client, "461 MODE :Invalid limit parameter");
+							return ;
+						}
                         channel.setLimitMember(lim);
                     } else {
                         channel.setLimitMember(64);

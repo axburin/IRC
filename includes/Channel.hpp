@@ -11,7 +11,7 @@ class Channel {
 		std::string name;
 		std::set<int> members;
 		std::set<int> ops;
-		int limit_member; // -1 pas de limite | 0 impossible | 64 max
+		int limit_member; // 64 max
 		bool is_invit_only; // default false
 		bool is_restrict_topic;
 		std::string topic;
