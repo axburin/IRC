@@ -1,18 +1,21 @@
-#include "Clients.hpp"
+# include "Server.hpp"
+# include "Channel.hpp"
+# include "Clients.hpp"
+# include "error.hpp"
 
 // Constructeur par défaut
-Client::Client(): 
-	client_fd(-1), is_authenticated(false), has_password(false), 
+Client::Client():
+	actual_channel(NULL), client_fd(-1), is_authenticated(false), has_password(false), 
 	has_nick(false), has_user(false) {
 }
 
 Client::Client(std::string nickname, std::string username, int fd): 
-	nickname(nickname), username(username), client_fd(fd), 
+	nickname(nickname), username(username), actual_channel(NULL), client_fd(fd), 
 	is_authenticated(false), has_password(false), has_nick(false), has_user(false) {
 }
 
 Client::Client(int fd): 
-	client_fd(fd), is_authenticated(false), has_password(false), 
+	actual_channel(NULL), client_fd(fd), is_authenticated(false), has_password(false), 
 	has_nick(false), has_user(false) {
 }
 
@@ -35,7 +38,6 @@ bool Client::extractCommand(std::string& command) {
 	// Retirer du buffer
 	size_t erase_len = (receive_buffer[pos] == '\r') ? pos + 2 : pos + 1;
 	receive_buffer.erase(0, erase_len);
-	
 	return true;
 }
 
@@ -67,4 +69,8 @@ void Client::checkRegistration() {
 
 std::string Client::getPrefix() const {
 	return nickname + "!" + username + "@localhost";
+}
+
+void Client::setChannel(Channel* chan){
+	actual_channel = chan;
 }
