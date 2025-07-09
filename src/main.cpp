@@ -14,7 +14,7 @@ void handle_sigint(int) {
 
 int main(int argc, char *argv[]){
 	if (argc != 3){
-		std::cerr << "Error invalid number of arguments ./irsserv <port> <password>" << std::endl;
+		std::cerr << "Error invalid number of arguments ./ircserv <port> <password>" << std::endl;
 	} else {
 		int flag = strIsDigit(argv[1]);
 		int port;
