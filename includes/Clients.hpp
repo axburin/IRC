@@ -3,11 +3,13 @@
 
 #include <string>
 #include <ctime>
+#include <set>
 
 class Channel;
 
 class Client {
 	private :
+		std::set<std::string> invite;
 		std::string nickname;
 		std::string username;
 		std::string realname;
@@ -43,13 +45,17 @@ class Client {
 		void setUsername(const std::string& user);
 		void setRealname(const std::string& real);
 		void setPassword(bool correct) { has_password = correct; }
+		void setInvite(std::string channel_name);
 		
 		// Authentification
+		bool isInvited(std::string channel_name);
 		bool isFullyRegistered() const;
 		void checkRegistration();
 		
 		// Utilitaires
 		std::string getPrefix() const;
+
+		void unsetInvite(std::string channel_name);
 };
 
 #endif

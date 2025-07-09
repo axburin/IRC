@@ -7,6 +7,7 @@
 
 class Channel {
 	private :
+		std::set<int> invited;
 		std::string name;
 		std::set<int> members;
 		std::set<int> ops;
@@ -33,6 +34,7 @@ class Channel {
 		void setName(std::string& name);
 		void setMembers(int fd);
 		void setOps(int fd);
+		void setInvited(int fd);
 		void setLimitMember(int nb);
 		void setIsInvitOnly(bool bl);
 		void setIsRestrictedTopic(bool bl);
@@ -41,9 +43,10 @@ class Channel {
 
 		void unsetMembers(int fd);
 		void unsetOps(int fd);
+		void unsetInvitedUser(int fd);
  
-		bool	findClientInChannel(int client_fd);
-		bool	clientOp(int client_op);
+		bool findClientInChannel(int client_fd);
+		bool clientOp(int client_op);
 
 };
 

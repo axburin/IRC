@@ -53,6 +53,8 @@ class Server {
 		void handlePrivmsg(Client* client, const std::vector<std::string>& tokens);
 		void handlePart(Client* client, const std::vector<std::string>& tokens);
 		void handleKick(Client* client, const std::vector<std::string>& tokens);
+		void KICK(Client* client, Channel* channel, const std::vector<std::string>& tokens);
+		void handleInvite(Client* client, const std::vector<std::string>& tokens);
 		void Handle_mode(Client* client, const std::vector<std::string>& args);
 		void Handle_topic(Client* client, const std::vector<std::string>& tokens);
 		
